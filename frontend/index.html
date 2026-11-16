@@ -23,6 +23,7 @@
   .login-box{background:#fff;padding:40px;border-radius:16px;width:400px;text-align:center} .login-box h2{margin-bottom:8px;color:#1a365d} .login-box p{color:var(--text-muted);margin-bottom:24px}
   .login-box button{width:100%;padding:14px;background:#2b6cb0;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer}
   .role-btn{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:13px} .role-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  details summary{font-weight:600;cursor:pointer;padding:8px 0;} details p{margin-top:8px;color:#4a5568;}
 </style>
 </head>
 <body>
@@ -32,6 +33,7 @@
 <div class="nav-item" onclick="showPage('offices')">🏠 Офисы</div>
 <div class="nav-item" onclick="showPage('documents')">📄 Документы (чек-лист)</div>
 <div class="nav-item" onclick="showPage('notifications')">🔔 Уведомления</div>
+<div class="nav-item" onclick="showPage('feedback')">💬 Обратная связь</div>
 </aside>
 <main class="main">
 <div class="header"><h1 id="page-title">Дашборд</h1><div class="user-badge">Роль: <strong id="current-role">Супер-админ</strong></div></div>
@@ -61,17 +63,33 @@
 <table><tr><th>№</th><th>Раздел</th><th>Документ</th><th>Статус</th></tr>
 <tr><td>1</td><td>Охрана труда</td><td>Положение о СУОТ</td><td><span class="badge badge-ok">Есть</span></td></tr>
 <tr><td>25</td><td>Охрана труда</td><td>Отчёт о СОУТ</td><td><span class="badge badge-warn">В работе</span></td></tr>
-<tr><td>52</td><td>Пожарная безопасность</td><td>Приказ об установлении противопожарного режима</td><td><span class="badge badge-ok">Есть</span></td></tr>
 </table>
 </div></div>
 
 <div class="page" id="notifications"><div class="section"><h2>Уведомления</h2>
 <p>Заканчивается СОУТ — Офис 1.2</p><p>Просрочен журнал — Офис N.1</p>
 </div></div>
+
+<div class="page" id="feedback">
+<div class="section">
+<h2>Часто задаваемые вопросы</h2>
+<details open><summary>Что такое СОУТ?</summary><p>СОУТ — специальная оценка условий труда. Обязательная процедура измерения вредных и опасных факторов на рабочих местах с присвоением класса условий труда. Проводится аккредитованной организацией не реже 1 раза в 5 лет.</p></details>
+<details><summary>Что такое ОПР?</summary><p>ОПР — оценка профессиональных рисков. Обязательная процедура выявления всех опасностей на рабочих местах, оценки вероятности и тяжести последствий и разработки мер по их снижению. Отличается от СОУТ более широким охватом рисков.</p></details>
+<details><summary>Чем СОУТ отличается от ОПР?</summary><p>СОУТ фокусируется на измерениях вредных факторов и классах условий труда. ОПР — на выявлении всех опасностей (включая организационные и эргономические) и управлении рисками. Обе процедуры обязательны и дополняют друг друга.</p></details>
+<details><summary>Что такое аналогичные рабочие места?</summary><p>Аналогичные рабочие места — это места с одинаковыми условиями, оборудованием и функциями. По ним СОУТ проводится только на 20% мест (но не менее 2). Результаты распространяются на всю группу. Это позволяет существенно снизить стоимость оценки.</p></details>
+<details><summary>Нужно ли проводить СОУТ для удалённых сотрудников?</summary><p>Нет. Согласно законодательству, СОУТ не проводится в отношении дистанционных работников. Их не включают в перечень рабочих мест для спецоценки.</p></details>
+<details><summary>Какая нормальная цена на СОУТ и ОПР?</summary><p>Для офисных мест в 2026 году типичная цена СОУТ — от 700 до 1 500 ₽ за место. ОПР обычно дешевле, но часто имеет минимальный порог договора (15–30 тыс. ₽). При большом количестве аналогичных мест цена может быть существенно ниже.</p></details>
+</div>
+<div class="section" style="margin-top:20px;">
+<h2>Оставить обратную связь</h2>
+<textarea placeholder="Ваш вопрос или предложение..." style="width:100%;height:100px;padding:12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;margin-bottom:12px;"></textarea>
+<button style="background:#2b6cb0;color:white;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;">Отправить</button>
+</div>
+</div>
 </main>
 <script>
 function login(){document.getElementById('login').style.display='none'}
-function showPage(p){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(p).classList.add('active');document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));event.target.classList.add('active');const t={dashboard:'Дашборд',offices:'Офисы',documents:'Документы (чек-лист)',notifications:'Уведомления'};document.getElementById('page-title').textContent=t[p]||p}
+function showPage(p){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(p).classList.add('active');document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));event.target.classList.add('active');const t={dashboard:'Дашборд',offices:'Офисы',documents:'Документы (чек-лист)',notifications:'Уведомления',feedback:'Обратная связь'};document.getElementById('page-title').textContent=t[p]||p}
 function switchRole(r,btn){document.querySelectorAll('.role-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.getElementById('current-role').textContent=r==='super'?'Супер-админ':'Ответственный офиса'}
 </script>
 </body>
