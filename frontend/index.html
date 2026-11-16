@@ -3,27 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Портал «Охрана труда» — Прототип</title>
+<title>Портал «Охрана труда»</title>
 <style>
-  :root { --bg:#f4f6f9; --sidebar:#1a365d; --sidebar-hover:#2c5282; --accent:#2b6cb0; --card:#fff; --text:#2d3748; --text-muted:#718096; --success:#48bb78; --warning:#ed8936; --danger:#e53e3e; --border:#e2e8f0; }
-  *{box-sizing:border-box;margin:0;padding:0} body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh}
-  .sidebar{width:260px;background:var(--sidebar);color:#fff;padding:20px 0;position:fixed;height:100vh;overflow-y:auto}
-  .logo{padding:0 20px 20px;font-size:18px;font-weight:700;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:15px} .logo span{color:#90cdf4}
-  .nav-item{padding:12px 20px;cursor:pointer;font-size:14px;transition:background .2s} .nav-item:hover,.nav-item.active{background:var(--sidebar-hover)} .nav-item.active{border-left:3px solid #90cdf4}
-  .main{margin-left:260px;flex:1;padding:24px 32px}
-  .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px} .header h1{font-size:24px}
-  .user-badge{background:var(--card);padding:8px 16px;border-radius:20px;font-size:13px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
-  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:24px}
-  .card{background:var(--card);border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.06)} .card-title{font-size:13px;color:var(--text-muted);margin-bottom:8px} .card-value{font-size:28px;font-weight:700} .card-value.success{color:var(--success)} .card-value.warning{color:var(--warning)} .card-value.danger{color:var(--danger)}
-  .section{background:var(--card);border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.06)} .section h2{font-size:16px;margin-bottom:16px}
-  table{width:100%;border-collapse:collapse;font-size:14px} th,td{text-align:left;padding:12px 8px;border-bottom:1px solid var(--border)} th{color:var(--text-muted);font-weight:600;font-size:12px;text-transform:uppercase}
-  .badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600} .badge-ok{background:#c6f6d5;color:#276749} .badge-warn{background:#feebc8;color:#c05621} .badge-danger{background:#fed7d7;color:#c53030}
-  .page{display:none} .page.active{display:block}
-  .login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#1a365d,#2b6cb0);display:flex;align-items:center;justify-content:center;z-index:100}
-  .login-box{background:#fff;padding:40px;border-radius:16px;width:400px;text-align:center} .login-box h2{margin-bottom:8px;color:#1a365d} .login-box p{color:var(--text-muted);margin-bottom:24px}
-  .login-box button{width:100%;padding:14px;background:#2b6cb0;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer}
-  .role-btn{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:13px} .role-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-  details summary{font-weight:600;cursor:pointer;padding:8px 0;} details p{margin-top:8px;color:#4a5568;}
+:root{--bg:#f4f6f9;--sidebar:#1a365d;--sidebar-hover:#2c5282;--accent:#2b6cb0;--card:#fff;--text:#2d3748;--text-muted:#718096;--success:#48bb78;--warning:#ed8936;--danger:#e53e3e;--border:#e2e8f0}
+*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh}
+.sidebar{width:260px;background:var(--sidebar);color:#fff;padding:20px 0;position:fixed;height:100vh;overflow-y:auto}
+.logo{padding:0 20px 20px;font-size:18px;font-weight:700;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:15px}.logo span{color:#90cdf4}
+.nav-item{padding:12px 20px;cursor:pointer;font-size:14px}.nav-item:hover,.nav-item.active{background:var(--sidebar-hover)}.nav-item.active{border-left:3px solid #90cdf4}
+.main{margin-left:260px;flex:1;padding:24px 32px}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}.header h1{font-size:24px}
+.user-badge{background:var(--card);padding:8px 16px;border-radius:20px;font-size:13px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.card{background:var(--card);border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.06)}.card-title{font-size:13px;color:var(--text-muted);margin-bottom:8px}.card-value{font-size:28px;font-weight:700}.card-value.success{color:var(--success)}.card-value.warning{color:var(--warning)}.card-value.danger{color:var(--danger)}
+.section{background:var(--card);border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.06)}.section h2{font-size:16px;margin-bottom:16px}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:12px 8px;border-bottom:1px solid var(--border)}th{color:var(--text-muted);font-weight:600;font-size:12px;text-transform:uppercase}
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600}.badge-ok{background:#c6f6d5;color:#276749}.badge-warn{background:#feebc8;color:#c05621}.badge-danger{background:#fed7d7;color:#c53030}
+.page{display:none}.page.active{display:block}
+.login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#1a365d,#2b6cb0);display:flex;align-items:center;justify-content:center;z-index:100}
+.login-box{background:#fff;padding:40px;border-radius:16px;width:400px;text-align:center}.login-box h2{margin-bottom:8px;color:#1a365d}.login-box p{color:var(--text-muted);margin-bottom:24px}
+.login-box button,.btn{padding:10px 16px;background:#2b6cb0;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600}
+.role-btn{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:13px}.role-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+details summary{font-weight:600;cursor:pointer;padding:8px 0}details p{margin-top:8px;color:#4a5568}
 </style>
 </head>
 <body>
@@ -31,7 +31,7 @@
 <aside class="sidebar"><div class="logo">Охрана <span>труда</span></div>
 <div class="nav-item active" onclick="showPage('dashboard')">📊 Дашборд</div>
 <div class="nav-item" onclick="showPage('offices')">🏠 Офисы</div>
-<div class="nav-item" onclick="showPage('documents')">📄 Документы (чек-лист)</div>
+<div class="nav-item" onclick="showPage('documents')">📄 Документы</div>
 <div class="nav-item" onclick="showPage('notifications')">🔔 Уведомления</div>
 <div class="nav-item" onclick="showPage('feedback')">💬 Обратная связь</div>
 </aside>
@@ -46,51 +46,39 @@
 <div class="card"><div class="card-title">Истекает СОУТ</div><div class="card-value warning">12</div></div>
 <div class="card"><div class="card-title">Просрочено</div><div class="card-value danger">5</div></div>
 </div>
-<div class="section"><h2>Ближайшие события</h2><table><tr><th>Событие</th><th>Офис</th><th>Статус</th></tr>
-<tr><td>СОУТ — истечение</td><td>Офис 1.2</td><td><span class="badge badge-warn">Скоро</span></td></tr>
-<tr><td>Просрочен журнал</td><td>Офис N.1</td><td><span class="badge badge-danger">Просрочено</span></td></tr>
-</table></div>
 </div>
 
-<div class="page" id="offices"><div class="section"><h2>Офисы</h2><table><tr><th>Офис</th><th>Индекс</th><th>Статус</th></tr>
-<tr><td>Офис 1.1</td><td>95%</td><td><span class="badge badge-ok">Хорошо</span></td></tr>
-<tr><td>Офис 1.2</td><td>88%</td><td><span class="badge badge-warn">Требует внимания</span></td></tr>
-</table></div></div>
-
-<div class="page" id="documents"><div class="section">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h2>Чек-лист документов — Офис 1.1</h2><button onclick="alert('Импорт из Excel выполнен')" style="background:#2b6cb0;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer">Импорт из Excel</button></div>
-<div class="cards"><div class="card"><div class="card-title">Есть</div><div class="card-value success">52</div></div><div class="card"><div class="card-title">В работе</div><div class="card-value warning">18</div></div><div class="card"><div class="card-title">Нет</div><div class="card-value danger">11</div></div><div class="card"><div class="card-title">Готовность</div><div class="card-value">64%</div></div></div>
-<table><tr><th>№</th><th>Раздел</th><th>Документ</th><th>Статус</th></tr>
-<tr><td>1</td><td>Охрана труда</td><td>Положение о СУОТ</td><td><span class="badge badge-ok">Есть</span></td></tr>
-<tr><td>25</td><td>Охрана труда</td><td>Отчёт о СОУТ</td><td><span class="badge badge-warn">В работе</span></td></tr>
-</table>
-</div></div>
-
-<div class="page" id="notifications"><div class="section"><h2>Уведомления</h2>
-<p>Заканчивается СОУТ — Офис 1.2</p><p>Просрочен журнал — Офис N.1</p>
-</div></div>
-
-<div class="page" id="feedback">
+<div class="page" id="offices">
+<div class="section" id="create-office-section" style="display:none">
+<h2>Создать новый офис</h2>
+<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:end">
+<div><label style="font-size:13px;color:#718096">Название офиса</label><br><input id="new-office-name" type="text" placeholder="Офис 3.1" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;margin-top:4px"></div>
+<div><label style="font-size:13px;color:#718096">Ответственный</label><br><input id="new-office-resp" type="text" placeholder="Иванов И.И." style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;margin-top:4px"></div>
+<button class="btn" onclick="createOffice()">Создать офис</button>
+</div>
+</div>
 <div class="section">
-<h2>Часто задаваемые вопросы</h2>
-<details open><summary>Что такое СОУТ?</summary><p>СОУТ — специальная оценка условий труда. Обязательная процедура измерения вредных и опасных факторов на рабочих местах с присвоением класса условий труда. Проводится аккредитованной организацией не реже 1 раза в 5 лет.</p></details>
-<details><summary>Что такое ОПР?</summary><p>ОПР — оценка профессиональных рисков. Обязательная процедура выявления всех опасностей на рабочих местах, оценки вероятности и тяжести последствий и разработки мер по их снижению. Отличается от СОУТ более широким охватом рисков.</p></details>
-<details><summary>Чем СОУТ отличается от ОПР?</summary><p>СОУТ фокусируется на измерениях вредных факторов и классах условий труда. ОПР — на выявлении всех опасностей (включая организационные и эргономические) и управлении рисками. Обе процедуры обязательны и дополняют друг друга.</p></details>
-<details><summary>Что такое аналогичные рабочие места?</summary><p>Аналогичные рабочие места — это места с одинаковыми условиями, оборудованием и функциями. По ним СОУТ проводится только на 20% мест (но не менее 2). Результаты распространяются на всю группу. Это позволяет существенно снизить стоимость оценки.</p></details>
-<details><summary>Нужно ли проводить СОУТ для удалённых сотрудников?</summary><p>Нет. Согласно законодательству, СОУТ не проводится в отношении дистанционных работников. Их не включают в перечень рабочих мест для спецоценки.</p></details>
-<details><summary>Какая нормальная цена на СОУТ и ОПР?</summary><p>Для офисных мест в 2026 году типичная цена СОУТ — от 700 до 1 500 ₽ за место. ОПР обычно дешевле, но часто имеет минимальный порог договора (15–30 тыс. ₽). При большом количестве аналогичных мест цена может быть существенно ниже.</p></details>
-</div>
-<div class="section" style="margin-top:20px;">
-<h2>Оставить обратную связь</h2>
-<textarea placeholder="Ваш вопрос или предложение..." style="width:100%;height:100px;padding:12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;margin-bottom:12px;"></textarea>
-<button style="background:#2b6cb0;color:white;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;">Отправить</button>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h2>Офисы</h2><button id="btn-create-office" class="btn" onclick="toggleCreateOffice()" style="display:none">+ Создать офис</button></div>
+<table id="offices-table">
+<tr><th>Офис</th><th>Ответственный</th><th>Индекс</th><th>Статус</th><th>Действия</th></tr>
+<tr><td>Офис 1.1</td><td>Иванов И.И.</td><td>95%</td><td><span class="badge badge-ok">Хорошо</span></td><td><button onclick="assignOffice(this)" style="font-size:12px;padding:4px 8px;border:1px solid #cbd5e0;border-radius:6px;background:#fff;cursor:pointer">Назначить</button></td></tr>
+<tr><td>Офис 1.2</td><td>Петров П.П.</td><td>88%</td><td><span class="badge badge-warn">Требует внимания</span></td><td><button onclick="assignOffice(this)" style="font-size:12px;padding:4px 8px;border:1px solid #cbd5e0;border-radius:6px;background:#fff;cursor:pointer">Назначить</button></td></tr>
+<tr><td>Офис 2.1</td><td>—</td><td>72%</td><td><span class="badge badge-warn">Требует внимания</span></td><td><button onclick="assignOffice(this)" style="font-size:12px;padding:4px 8px;border:1px solid #cbd5e0;border-radius:6px;background:#fff;cursor:pointer">Назначить</button></td></tr>
+</table>
 </div>
 </div>
+
+<div class="page" id="documents"><div class="section"><h2>Чек-лист документов</h2><p>Импорт из Excel доступен в полной версии.</p></div></div>
+<div class="page" id="notifications"><div class="section"><h2>Уведомления</h2><p>Заканчивается СОУТ — Офис 1.2</p></div></div>
+<div class="page" id="feedback"><div class="section"><h2>Часто задаваемые вопросы</h2><details open><summary>Что такое СОУТ?</summary><p>СОУТ — специальная оценка условий труда.</p></details><details><summary>Что такое ОПР?</summary><p>ОПР — оценка профессиональных рисков.</p></details></div></div>
 </main>
 <script>
-function login(){document.getElementById('login').style.display='none'}
-function showPage(p){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(p).classList.add('active');document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));event.target.classList.add('active');const t={dashboard:'Дашборд',offices:'Офисы',documents:'Документы (чек-лист)',notifications:'Уведомления',feedback:'Обратная связь'};document.getElementById('page-title').textContent=t[p]||p}
-function switchRole(r,btn){document.querySelectorAll('.role-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.getElementById('current-role').textContent=r==='super'?'Супер-админ':'Ответственный офиса'}
+function login(){document.getElementById('login').style.display='none';document.getElementById('btn-create-office').style.display='block'}
+function showPage(p){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(p).classList.add('active');document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));event.target.classList.add('active');const t={dashboard:'Дашборд',offices:'Офисы',documents:'Документы',notifications:'Уведомления',feedback:'Обратная связь'};document.getElementById('page-title').textContent=t[p]||p}
+function switchRole(r,btn){document.querySelectorAll('.role-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');const isSuper=r==='super';document.getElementById('current-role').textContent=isSuper?'Супер-админ':'Ответственный офиса';document.getElementById('btn-create-office').style.display=isSuper?'block':'none';document.getElementById('create-office-section').style.display='none'}
+function toggleCreateOffice(){const s=document.getElementById('create-office-section');s.style.display=s.style.display==='none'?'block':'none'}
+function createOffice(){const name=document.getElementById('new-office-name').value.trim();const resp=document.getElementById('new-office-resp').value.trim()||'—';if(!name){alert('Укажите название офиса');return}const table=document.getElementById('offices-table');const row=table.insertRow();row.innerHTML=`<td>${name}</td><td>${resp}</td><td>—</td><td><span class="badge badge-warn">Новый</span></td><td><button onclick="assignOffice(this)" style="font-size:12px;padding:4px 8px;border:1px solid #cbd5e0;border-radius:6px;background:#fff;cursor:pointer">Назначить</button></td>`;document.getElementById('new-office-name').value='';document.getElementById('new-office-resp').value='';document.getElementById('create-office-section').style.display='none';alert('Офис «'+name+'» создан')}
+function assignOffice(btn){const row=btn.closest('tr');const cur=row.cells[1].textContent;const name=prompt('Назначить ответственного для офиса «'+row.cells[0].textContent+'»:',cur==='—'?'':cur);if(name!==null)row.cells[1].textContent=name.trim()||'—'}
 </script>
 </body>
 </html>
