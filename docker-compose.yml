@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  portal:
+    build: .
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    container_name: ohrana-truda-portal
+
+  # Заготовка для будущего backend
+  # backend:
+  #   build: ./backend
+  #   ports:
+  #     - "8000:8000"
+  #   environment:
+  #     - DATABASE_URL=postgresql://user:pass@db:5432/ohrana
+  #   depends_on:
+  #     - db
+
+  # db:
+  #   image: postgres:16-alpine
+  #   environment:
+  #     POSTGRES_DB: ohrana
+  #     POSTGRES_USER: user
+  #     POSTGRES_PASSWORD: pass
+  #   volumes:
+  #     - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
