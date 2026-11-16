@@ -9,13 +9,16 @@
 *{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh}
 .sidebar{width:260px;background:var(--sidebar);color:#fff;padding:20px 0;position:fixed;height:100vh;overflow-y:auto}
 .logo{padding:0 20px 20px;font-size:18px;font-weight:700;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:15px}.logo span{color:#90cdf4}
-.nav-item{padding:12px 20px;cursor:pointer;font-size:14px}.nav-item:hover,.nav-item.active{background:var(--sidebar-hover)}.nav-item.active{border-left:3px solid #90cdf4}
+.nav-item{padding:10px 20px;cursor:pointer;font-size:14px}.nav-item:hover,.nav-item.active{background:var(--sidebar-hover)}.nav-item.active{border-left:3px solid #90cdf4}
 .main{margin-left:260px;flex:1;padding:24px 32px}
 .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}.header h1{font-size:24px}
 .user-badge{background:var(--card);padding:8px 16px;border-radius:20px;font-size:13px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
 .card{background:var(--card);border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.06)}.card-title{font-size:13px;color:var(--text-muted);margin-bottom:8px}.card-value{font-size:28px;font-weight:700}.card-value.success{color:var(--success)}.card-value.warning{color:var(--warning)}.card-value.danger{color:var(--danger)}
 .section{background:var(--card);border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.06)}.section h2{font-size:16px;margin-bottom:16px}
+.modules-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.module-card{background:var(--bg);border-radius:10px;padding:16px;text-align:center;cursor:pointer;border:1px solid var(--border)}
+.module-icon{font-size:28px;margin-bottom:8px}.module-name{font-size:13px;font-weight:600}
 table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:12px 8px;border-bottom:1px solid var(--border)}th{color:var(--text-muted);font-weight:600;font-size:12px;text-transform:uppercase}
 .badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600}.badge-ok{background:#c6f6d5;color:#276749}.badge-warn{background:#feebc8;color:#c05621}.badge-danger{background:#fed7d7;color:#c53030}
 .page{display:none}.page.active{display:block}
@@ -31,6 +34,12 @@ details summary{font-weight:600;cursor:pointer;padding:8px 0}details p{margin-to
 <aside class="sidebar"><div class="logo">Охрана <span>труда</span></div>
 <div class="nav-item active" onclick="showPage('dashboard')">📊 Дашборд</div>
 <div class="nav-item" onclick="showPage('offices')">🏠 Офисы</div>
+<div class="nav-item" onclick="showPage('modules')">📦 Модули</div>
+<div class="nav-item" onclick="showPage('sout')">📋 СОУТ</div>
+<div class="nav-item" onclick="showPage('opr')">⚠️ ОПР</div>
+<div class="nav-item" onclick="showPage('fire')">🔥 Пожарная безопасность</div>
+<div class="nav-item" onclick="showPage('electro')">⚡ Электробезопасность</div>
+<div class="nav-item" onclick="showPage('go')">🚨 ГО ЧС</div>
 <div class="nav-item" onclick="showPage('documents')">📄 Документы</div>
 <div class="nav-item" onclick="showPage('notifications')">🔔 Уведомления</div>
 <div class="nav-item" onclick="showPage('feedback')">💬 Обратная связь</div>
@@ -63,18 +72,39 @@ details summary{font-weight:600;cursor:pointer;padding:8px 0}details p{margin-to
 <tr><th>Офис</th><th>Ответственный</th><th>Индекс</th><th>Статус</th><th>Действия</th></tr>
 <tr><td>Офис 1.1</td><td>Иванов И.И.</td><td>95%</td><td><span class="badge badge-ok">Хорошо</span></td><td><button onclick="assignOffice(this)" style="font-size:12px;padding:4px 8px;border:1px solid #cbd5e0;border-radius:6px;background:#fff;cursor:pointer">Назначить</button></td></tr>
 <tr><td>Офис 1.2</td><td>Петров П.П.</td><td>88%</td><td><span class="badge badge-warn">Требует внимания</span></td><td><button onclick="assignOffice(this)" style="font-size:12px;padding:4px 8px;border:1px solid #cbd5e0;border-radius:6px;background:#fff;cursor:pointer">Назначить</button></td></tr>
-<tr><td>Офис 2.1</td><td>—</td><td>72%</td><td><span class="badge badge-warn">Требует внимания</span></td><td><button onclick="assignOffice(this)" style="font-size:12px;padding:4px 8px;border:1px solid #cbd5e0;border-radius:6px;background:#fff;cursor:pointer">Назначить</button></td></tr>
 </table>
 </div>
 </div>
 
-<div class="page" id="documents"><div class="section"><h2>Чек-лист документов</h2><p>Импорт из Excel доступен в полной версии.</p></div></div>
+<div class="page" id="modules">
+<div class="modules-grid">
+<div class="module-card"><div class="module-icon">🛡️</div><div class="module-name">Охрана труда</div></div>
+<div class="module-card"><div class="module-icon">🚨</div><div class="module-name">ГО ЧС</div></div>
+<div class="module-card"><div class="module-icon">🔥</div><div class="module-name">Пожарная безопасность</div></div>
+<div class="module-card"><div class="module-icon">⚡</div><div class="module-name">Электробезопасность</div></div>
+<div class="module-card"><div class="module-icon">📄</div><div class="module-name">Документы и журналы</div></div>
+<div class="module-card"><div class="module-icon">🎓</div><div class="module-name">Обучение</div></div>
+<div class="module-card"><div class="module-icon">📋</div><div class="module-name">СОУТ</div></div>
+<div class="module-card"><div class="module-icon">⚠️</div><div class="module-name">ОПР (риски)</div></div>
+<div class="module-card"><div class="module-icon">🔔</div><div class="module-name">Уведомления</div></div>
+<div class="module-card"><div class="module-icon">💬</div><div class="module-name">Обратная связь</div></div>
+<div class="module-card"><div class="module-icon">📖</div><div class="module-name">Инструкция</div></div>
+<div class="module-card"><div class="module-icon">🏋️</div><div class="module-name">Тренинг обучения</div></div>
+</div>
+</div>
+
+<div class="page" id="sout"><div class="section"><h2>СОУТ</h2><p>Специальная оценка условий труда по офисам.</p></div></div>
+<div class="page" id="opr"><div class="section"><h2>ОПР (риски)</h2><p>Оценка профессиональных рисков.</p></div></div>
+<div class="page" id="fire"><div class="section"><h2>Пожарная безопасность</h2><p>Приказы, инструкции, планы эвакуации, журналы.</p></div></div>
+<div class="page" id="electro"><div class="section"><h2>Электробезопасность</h2><p>Группы допуска, журналы, ответственные.</p></div></div>
+<div class="page" id="go"><div class="section"><h2>ГО ЧС</h2><p>Гражданская оборона и чрезвычайные ситуации.</p></div></div>
+<div class="page" id="documents"><div class="section"><h2>Чек-лист документов</h2><p>Импорт из Excel.</p></div></div>
 <div class="page" id="notifications"><div class="section"><h2>Уведомления</h2><p>Заканчивается СОУТ — Офис 1.2</p></div></div>
 <div class="page" id="feedback"><div class="section"><h2>Часто задаваемые вопросы</h2><details open><summary>Что такое СОУТ?</summary><p>СОУТ — специальная оценка условий труда.</p></details><details><summary>Что такое ОПР?</summary><p>ОПР — оценка профессиональных рисков.</p></details></div></div>
 </main>
 <script>
 function login(){document.getElementById('login').style.display='none';document.getElementById('btn-create-office').style.display='block'}
-function showPage(p){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(p).classList.add('active');document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));event.target.classList.add('active');const t={dashboard:'Дашборд',offices:'Офисы',documents:'Документы',notifications:'Уведомления',feedback:'Обратная связь'};document.getElementById('page-title').textContent=t[p]||p}
+function showPage(p){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(p).classList.add('active');document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));event.target.classList.add('active');const t={dashboard:'Дашборд',offices:'Офисы',modules:'Модули',sout:'СОУТ',opr:'ОПР',fire:'Пожарная безопасность',electro:'Электробезопасность',go:'ГО ЧС',documents:'Документы',notifications:'Уведомления',feedback:'Обратная связь'};document.getElementById('page-title').textContent=t[p]||p}
 function switchRole(r,btn){document.querySelectorAll('.role-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');const isSuper=r==='super';document.getElementById('current-role').textContent=isSuper?'Супер-админ':'Ответственный офиса';document.getElementById('btn-create-office').style.display=isSuper?'block':'none';document.getElementById('create-office-section').style.display='none'}
 function toggleCreateOffice(){const s=document.getElementById('create-office-section');s.style.display=s.style.display==='none'?'block':'none'}
 function createOffice(){const name=document.getElementById('new-office-name').value.trim();const resp=document.getElementById('new-office-resp').value.trim()||'—';if(!name){alert('Укажите название офиса');return}const table=document.getElementById('offices-table');const row=table.insertRow();row.innerHTML=`<td>${name}</td><td>${resp}</td><td>—</td><td><span class="badge badge-warn">Новый</span></td><td><button onclick="assignOffice(this)" style="font-size:12px;padding:4px 8px;border:1px solid #cbd5e0;border-radius:6px;background:#fff;cursor:pointer">Назначить</button></td>`;document.getElementById('new-office-name').value='';document.getElementById('new-office-resp').value='';document.getElementById('create-office-section').style.display='none';alert('Офис «'+name+'» создан')}
