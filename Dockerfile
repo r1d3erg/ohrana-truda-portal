@@ -1,17 +1,20 @@
-FROM nginx:alpine
+# --- Этап 1: сборка React-приложения ---
+FROM node:20-alpine AS build
+WORKDIR /app
 
-# Копируем фронтенд
-COPY frontend/ /usr/share/nginx/html/
+# Сначала только манифесты — слой с зависимостями кэшируется
+COPY package.json package-lock.json* ./
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
-# Настройка nginx для SPA-подобного роутинга (если понадобится)
-RUN echo 'server { \
-    listen 80; \
-    root /usr/share/nginx/html; \
-    index index.html; \
-    location / { \
-        try_files $uri $uri/ /index.html; \
-    } \
-}' > /etc/nginx/conf.d/default.conf
+COPY index.html vite.config.js ./
+COPY src/ ./src/
+RUN npm run build
+
+# --- Этап 2: раздача статики через nginx ---
+FROM nginx:1.27-alpine
+
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/dist/ /usr/share/nginx/html/
 
 EXPOSE 80
 

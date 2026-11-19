@@ -1,6 +1,12 @@
+node_modules/
+dist/
 backend/
 docs/
 .git
 .gitignore
-README.md
+.dockerignore
+Dockerfile
+docker-compose.yml
+.env
+.env.*
 *.md

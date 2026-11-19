@@ -1,0 +1,22 @@
+# Зависимости и сборка
+node_modules/
+dist/
+*.local
+
+# Окружение и секреты
+.env
+.env.*
+!.env.example
+
+# Логи
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# IDE и ОС
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
