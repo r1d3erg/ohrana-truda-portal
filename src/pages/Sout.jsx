@@ -112,7 +112,7 @@ function SoutForm({ cfg, office, record, onClose, onSaved }) {
           <SelectField {...p} name="reason" label="Основание (ч. 1 ст. 17 426-ФЗ)" options={cfg?.sout_reasons} empty="— выберите —" wide />
           <DateField {...p} name="reason_date" label="Дата наступления основания" />
           <DateField {...p} name="due_date" label="Срок проведения"
-                     hint={autoDue ? `По умолчанию: ${fmtDate(autoDue)} (${reasonInfo.months} мес.)` : 'Новые места — 12 мес., остальные основания — 6 мес.'} />
+                     hint={autoDue ? `По умолчанию: ${fmtDate(autoDue)} (${reasonInfo.months} мес.)` : 'Новые места и изменение техпроцесса — 12 мес., остальные основания — 6 мес.'} />
         </>}
       </Fieldset>
 

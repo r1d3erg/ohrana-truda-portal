@@ -4,6 +4,7 @@ FastAPI + SQLAlchemy 2 + PostgreSQL (SQLite для разработки и те�
 
 Подробное описание формата таблицы, алгоритма загрузки, API и связи с
 порталом: [../docs/checklist-import.md](../docs/checklist-import.md).
+Как добавить свой отчёт: [../docs/developer-guide.md](../docs/developer-guide.md).
 
 ## Реализовано
 
@@ -19,21 +20,24 @@ FastAPI + SQLAlchemy 2 + PostgreSQL (SQLite для разработки и те�
 
 ```
 app/
-  config.py    — настройки из переменных окружения
-  db.py        — подключение к БД
-  models.py    — таблицы offices, checklist_imports, checklist_items
-  parser.py    — разбор .xlsx (не зависит от веба и БД)
-  services.py  — загрузка, расчёты, данные для портала
-  main.py      — HTTP API
+  config.py     — настройки из переменных окружения
+  db.py         — подключение к БД, сессии, create_all
+  models.py     — таблицы offices, checklist_imports, checklist_items,
+                  sout_assessments, risk_assessments
+  parser.py     — разбор .xlsx чек-листа (не зависит от веба и БД)
+  services.py   — загрузка чек-листа, расчёты, дашборд
+  registers.py  — СОУТ и ОПР: справочники, проверки, сроки, предупреждения
+  main.py       — HTTP API (все маршруты под /api)
 tests/
-  factory.py   — генератор синтетической таблицы того же формата
-  test_parser.py, test_api.py
+  conftest.py   — временная SQLite, фикстура client
+  factory.py    — генератор синтетической таблицы того же формата
+  test_parser.py, test_api.py, test_registers.py
 ```
 
 ## Запуск
 
 ```bash
-python -m venv .venv && . .venv/bin/activate
+python3 -m venv .venv && . .venv/bin/activate   # нужен Python 3.10+
 pip install -r requirements-dev.txt
 uvicorn app.main:app --reload --port 8000
 pytest

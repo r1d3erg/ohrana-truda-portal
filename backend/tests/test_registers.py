@@ -29,6 +29,11 @@ def test_unplanned_due_date_12_or_6_months():
     assert p["due_date"] == date(2027, 1, 15)
     p = prepare_sout({"kind": "unplanned", "status": "planned", "reason": "git_order", "reason_date": date(2026, 1, 15)})
     assert p["due_date"] == date(2026, 7, 15)
+    # п. 3 ч. 1 ст. 17 (изменение техпроцесса) — 12 месяцев, п. 4 (материалы) — 6
+    p = prepare_sout({"kind": "unplanned", "status": "planned", "reason": "process_change", "reason_date": date(2026, 1, 15)})
+    assert p["due_date"] == date(2027, 1, 15)
+    p = prepare_sout({"kind": "unplanned", "status": "planned", "reason": "materials_change", "reason_date": date(2026, 1, 15)})
+    assert p["due_date"] == date(2026, 7, 15)
 
 
 @pytest.mark.parametrize("data, text", [

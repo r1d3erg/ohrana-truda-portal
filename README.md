@@ -9,6 +9,12 @@
 
 📄 **СОУТ и ОПР — ручной ввод, сроки и предупреждения:** [docs/sout-opr.md](docs/sout-opr.md)
 
+🛠 **Для разработчиков — как устроен проект и как подключить свой отчёт:**
+[docs/developer-guide.md](docs/developer-guide.md)
+
+Требования: Docker (для запуска стека) или Python 3.10+ и Node.js 20+ (для
+локальной разработки; в Docker и CI — Python 3.12 и Node.js 22).
+
 ## Запуск в Docker
 
 ```bash
@@ -35,7 +41,7 @@ docker compose up -d --build
 ```bash
 # бэкенд — http://localhost:8000 (SQLite в backend/data/)
 cd backend
-python -m venv .venv && . .venv/bin/activate
+python3 -m venv .venv && . .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements-dev.txt
 uvicorn app.main:app --reload --port 8000
 
@@ -50,13 +56,14 @@ npm run dev
 
 - `src/App.jsx` — каркас портала, навигация, роли
 - `src/pages/` — страницы «Дашборд», «Офисы», «Документы» (загрузка таблицы, чек-лист офиса, история), «СОУТ», «ОПР»
-- `src/api.js` — клиент API; `src/components.jsx` — общие компоненты
+- `src/api.js` — клиент API; `src/components.jsx` — общие компоненты;
+  `src/registerParts.jsx` — формы и списки предупреждений для СОУТ/ОПР
 - `backend/app/parser.py` — разбор сводной таблицы
 - `backend/app/services.py` — загрузка, расчёт показателей, данные для портала
 - `backend/app/registers.py` — СОУТ и ОПР: справочники, сроки, статусы, предупреждения
 - `backend/app/main.py` — HTTP API; `backend/app/models.py` — модель данных
 - `backend/tests/` — тесты (таблица для тестов генерируется синтетически)
-- `docs/` — архитектура и подробное описание загрузки
+- `docs/` — архитектура, загрузка чек-листа, СОУТ/ОПР, руководство разработчика
 - `Dockerfile`, `nginx.conf`, `backend/Dockerfile`, `docker-compose.yml` — сборка и деплой
 - `start-dev.command` — локальный запуск на macOS одной кнопкой
 - `.github/workflows/ci.yml` — сборка фронтенда, тесты бэкенда, сборка образов, сквозная проверка стека
