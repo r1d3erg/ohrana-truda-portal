@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { fmtDate, fmtDateTime, fmtPct } from '../api.js'
 import { CategoryTable } from '../components.jsx'
+import { AlertList } from '../registerParts.jsx'
 
 // Цвета состояний (статусная палитра): цвет никогда не единственный носитель смысла —
 // рядом всегда число и подпись.
@@ -151,7 +152,8 @@ function Kpis({ data, onOpenOffices }) {
 // ---------------------------------------------------------------------------
 // Тепловая карта «офис × направление»
 // ---------------------------------------------------------------------------
-function Heatmap({ data, onDrill, bind }) {
+function Heatmap({ data, onDrill, bind, onOpenRegister }) {
+  const reg = data.registers
   const [sortKey, setSortKey] = useState('readiness')
   const [onlyProblems, setOnlyProblems] = useState(false)
   const [metric, setMetric] = useState('pct')
@@ -200,6 +202,8 @@ function Heatmap({ data, onDrill, bind }) {
             <tr>
               <th className="hm-office">Офис</th>
               <th className="hm-total">Индекс</th>
+              <th className="hm-reg">СОУТ</th>
+              <th className="hm-reg">ОПР</th>
               {cats.map(c => {
                 const info = catInfo[c]
                 return (
@@ -219,7 +223,7 @@ function Heatmap({ data, onDrill, bind }) {
           </thead>
           <tbody>
             {rows.length === 0 && (
-              <tr><td colSpan={cats.length + 2} className="muted" style={{ padding: 16 }}>Нет офисов, подходящих под фильтр</td></tr>
+              <tr><td colSpan={cats.length + 4} className="muted" style={{ padding: 16 }}>Нет офисов, подходящих под фильтр</td></tr>
             )}
             {rows.map(m => (
               <tr key={m.code}>
@@ -232,6 +236,10 @@ function Heatmap({ data, onDrill, bind }) {
                   <div className={`hm-total-val lvl-${m.level}`}>{fmtPct(m.readiness)}</div>
                   <Delta value={m.delta} />
                 </td>
+                <RegCell info={reg?.sout?.by_office?.[m.code]} date={reg?.sout?.by_office?.[m.code]?.valid_until}
+                         onClick={() => onOpenRegister('sout', m.code)} bind={bind} title={`${m.code} · СОУТ`} />
+                <RegCell info={reg?.opr?.by_office?.[m.code]} date={reg?.opr?.by_office?.[m.code]?.next_review_date}
+                         onClick={() => onOpenRegister('opr', m.code)} bind={bind} title={`${m.code} · ОПР`} />
                 {cats.map(c => {
                   const cell = m.cells[c]
                   if (!cell) return <td key={c} className="hm-cell hm-none">—</td>
@@ -267,6 +275,59 @@ function Heatmap({ data, onDrill, bind }) {
         <span><i className="dv-swatch lvl-bg-warn" />! {data.thresholds.warn}–{data.thresholds.good}% — требует внимания</span>
         <span><i className="dv-swatch lvl-bg-bad" />✕ &lt; {data.thresholds.warn}% — критично</span>
         <span>— нет позиций</span>
+      </div>
+    </div>
+  )
+}
+
+function RegCell({ info, date, onClick, bind, title }) {
+  const level = info?.level || 'new'
+  return (
+    <td className={`hm-cell hm-reg-cell lvl-tint-${level}`} onClick={onClick}
+        {...bind(<TipRows title={title} rows={[['Статус', info?.state_label || 'Нет данных'], ['Срок', fmtDate(date)]]} />)}>
+      <div className="hm-reg-label">{LEVEL_ICON[level]} {info?.state_label || 'Нет данных'}</div>
+      {date && <div className="hm-cell-sub">{fmtDate(date)}</div>}
+    </td>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// СОУТ и ОПР: состояния и ближайшие сроки
+// ---------------------------------------------------------------------------
+function RegistersBlock({ reg, onOpenRegister }) {
+  if (!reg) return null
+  const s = reg.sout.counts
+  const o = reg.opr.counts
+  const Item = ({ v, label, cls }) => <div className="reg-kpi-item"><span className={`reg-kpi-val ${cls}`}>{v}</span><span className="muted">{label}</span></div>
+  return (
+    <div className="two-col">
+      <div className="section">
+        <div className="section-head"><h2>СОУТ и ОПР по офисам</h2></div>
+        <div className="reg-kpi" onClick={() => onOpenRegister('sout')}>
+          <div className="reg-kpi-title">СОУТ</div>
+          <Item v={s.ok + s.declared} label="действует" cls="lvl-good" />
+          <Item v={s.expiring} label="истекает" cls="lvl-warn" />
+          <Item v={s.expired} label="истекла" cls="lvl-bad" />
+          <Item v={s.none + s.planned} label="нет данных" cls="lvl-new" />
+          <Item v={reg.sout.harmful_workplaces} label="мест с вредными УТ" cls={reg.sout.harmful_workplaces ? 'lvl-warn' : 'lvl-new'} />
+        </div>
+        <div className="reg-kpi" onClick={() => onOpenRegister('opr')}>
+          <div className="reg-kpi-title">ОПР</div>
+          <Item v={o.ok} label="действует" cls="lvl-good" />
+          <Item v={o.review_soon} label="скоро пересмотр" cls="lvl-warn" />
+          <Item v={o.review_overdue} label="просрочен" cls="lvl-bad" />
+          <Item v={o.none + o.planned} label="нет данных" cls="lvl-new" />
+          <Item v={reg.opr.high_risks} label="высоких рисков" cls={reg.opr.high_risks ? 'lvl-bad' : 'lvl-new'} />
+        </div>
+      </div>
+      <div className="section">
+        <div className="section-head">
+          <h2>Сроки и нарушения</h2>
+          {reg.alerts_total > 0 && <span className="muted">{reg.alerts_bad} критичных из {reg.alerts_total}</span>}
+        </div>
+        <div className="weak-list" style={{ maxHeight: 300 }}>
+          <AlertList alerts={reg.alerts.slice(0, 12)} showOffice onOffice={(a) => onOpenRegister(a.kind, a.office_code)} />
+        </div>
       </div>
     </div>
   )
@@ -368,24 +429,28 @@ function CategoryBars({ data, bind }) {
 }
 
 // ---------------------------------------------------------------------------
-export default function Dashboard({ data, onOpenOffices, onOpenDocuments, onDrill }) {
+export default function Dashboard({ data, onOpenOffices, onOpenDocuments, onDrill, onOpenRegister }) {
   const [bind, tooltip] = useTooltip()
   if (!data) return <div className="section"><p className="muted">Загрузка…</p></div>
 
   if (!data.offices_with_data) {
     return (
+      <>
+      <RegistersBlock reg={data.registers} onOpenRegister={onOpenRegister} />
       <div className="section empty-state">
         <h2>Данных пока нет</h2>
         <p className="muted">Загрузите сводную таблицу «Чек-лист обязательных документов» — офис и показатели появятся автоматически.</p>
         <button className="btn" onClick={onOpenDocuments}>Загрузить таблицу</button>
       </div>
+      </>
     )
   }
 
   return (
     <>
       <Kpis data={data} onOpenOffices={onOpenOffices} />
-      <Heatmap data={data} onDrill={onDrill} bind={bind} />
+      <Heatmap data={data} onDrill={onDrill} bind={bind} onOpenRegister={onOpenRegister} />
+      <RegistersBlock reg={data.registers} onOpenRegister={onOpenRegister} />
       <div className="two-col">
         <WeakSpots data={data} onDrill={onDrill} bind={bind} />
         <TopMissing data={data} onDrill={onDrill} />

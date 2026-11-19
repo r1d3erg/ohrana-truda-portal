@@ -4,6 +4,8 @@ import { ErrorBox } from './components.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Documents from './pages/Documents.jsx'
 import Offices from './pages/Offices.jsx'
+import Opr from './pages/Opr.jsx'
+import Sout from './pages/Sout.jsx'
 
 const PAGES = {
   dashboard: 'Дашборд',
@@ -34,7 +36,7 @@ const MODULES = [
   { icon: '🏋️', name: 'Тренинг обучения' },
 ]
 
-const IMPLEMENTED = ['dashboard', 'offices', 'documents', 'modules', 'feedback']
+const IMPLEMENTED = ['dashboard', 'offices', 'documents', 'sout', 'opr', 'modules', 'feedback']
 
 export default function App() {
   const [loggedIn, setLoggedIn] = useState(false)
@@ -45,6 +47,8 @@ export default function App() {
   const [selectedOffice, setSelectedOffice] = useState(null)
   // Переход с дашборда в документы офиса с готовым фильтром
   const [docFocus, setDocFocus] = useState(null)
+  const [cfg, setCfg] = useState(null)
+  const [registerFocus, setRegisterFocus] = useState(null)
   const [error, setError] = useState(null)
 
   // Данные портала берутся из API; reload вызывается после любых изменений
@@ -61,7 +65,7 @@ export default function App() {
 
   useEffect(() => {
     if (!loggedIn) return
-    api.config().then(setThresholds).catch(() => {})
+    api.config().then(c => { setThresholds(c); setCfg(c) }).catch(() => {})
     reload()
   }, [loggedIn, reload])
 
@@ -81,6 +85,11 @@ export default function App() {
     setSelectedOffice(code)
     setDocFocus(null)
     setPage('documents')
+  }
+
+  const openRegister = (kind, code) => {
+    setRegisterFocus({ code, nonce: Date.now() })
+    setPage(kind)
   }
 
   const drill = ({ code, category = '', status = '', q = '' }) => {
@@ -115,7 +124,8 @@ export default function App() {
 
         {page === 'dashboard' && (
           <Dashboard data={dashboard} onOpenOffices={() => setPage('offices')}
-                     onOpenDocuments={() => setPage('documents')} onDrill={drill} />
+                     onOpenDocuments={() => setPage('documents')} onDrill={drill}
+                     onOpenRegister={openRegister} />
         )}
 
         {page === 'offices' && (
@@ -125,6 +135,14 @@ export default function App() {
         {page === 'documents' && (
           <Documents offices={offices} role={role} selectedCode={selectedOffice}
                      onSelect={setSelectedOffice} onChanged={reload} focus={docFocus} />
+        )}
+
+        {page === 'sout' && (
+          <Sout cfg={cfg} role={role} focusCode={registerFocus?.code} key={`sout-${registerFocus?.nonce || 0}`} onChanged={reload} />
+        )}
+
+        {page === 'opr' && (
+          <Opr cfg={cfg} role={role} focusCode={registerFocus?.code} key={`opr-${registerFocus?.nonce || 0}`} onChanged={reload} />
         )}
 
         {page === 'modules' && (

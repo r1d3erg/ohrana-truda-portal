@@ -23,3 +23,9 @@ READINESS_WARN = _int("READINESS_WARN", 70)   # от этого значения
 # Разрешённые источники для CORS (через запятую). Пусто — CORS выключен
 # (фронтенд ходит в API через тот же домен: прокси Vite или nginx).
 CORS_ORIGINS = [o.strip() for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip()]
+
+# СОУТ / ОПР
+SOUT_VALIDITY_YEARS = _int("SOUT_VALIDITY_YEARS", 5)          # ч. 4 ст. 8 426-ФЗ
+SOUT_WARN_DAYS = _int("SOUT_WARN_DAYS", 180)                 # за сколько дней предупреждать об окончании
+OPR_REVIEW_MONTHS = _int("OPR_REVIEW_MONTHS", 12)            # пересмотр ОПР по умолчанию (задаёт работодатель)
+OPR_WARN_DAYS = _int("OPR_WARN_DAYS", 60)

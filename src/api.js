@@ -46,6 +46,12 @@ export const api = {
   },
   officeImports: (code) => request(`/offices/${encodeURIComponent(code)}/imports`),
   deleteImport: (id) => request(`/imports/${id}`, { method: 'DELETE' }),
+  // СОУТ и ОПР (kind = 'sout' | 'opr')
+  registerSummary: (kind) => request(`/${kind}`),
+  officeRegister: (kind, code) => request(`/offices/${encodeURIComponent(code)}/${kind}`),
+  createRegister: (kind, code, body) => request(`/offices/${encodeURIComponent(code)}/${kind}`, json('POST', body)),
+  updateRegister: (kind, id, body) => request(`/${kind}/${id}`, json('PUT', body)),
+  deleteRegister: (kind, id) => request(`/${kind}/${id}`, { method: 'DELETE' }),
   uploadChecklist: (file, { dryRun = false } = {}) => {
     const form = new FormData()
     form.append('file', file)
@@ -73,3 +79,17 @@ export const fmtDate = (iso) => {
 }
 export const fmtDateTime = (iso) => (iso ? new Date(iso).toLocaleString('ru-RU') : '—')
 export const fmtPct = (v) => (v == null ? '—' : `${v}%`)
+
+export const daysWord = (n) => {
+  const a = Math.abs(n) % 100, b = a % 10
+  if (a > 10 && a < 20) return 'дней'
+  if (b === 1) return 'день'
+  if (b >= 2 && b <= 4) return 'дня'
+  return 'дней'
+}
+export const fmtDaysLeft = (n) => {
+  if (n == null) return ''
+  if (n < 0) return `просрочено на ${-n} ${daysWord(n)}`
+  if (n === 0) return 'сегодня'
+  return `через ${n} ${daysWord(n)}`
+}

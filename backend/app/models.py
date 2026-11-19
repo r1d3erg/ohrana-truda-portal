@@ -95,3 +95,96 @@ class ChecklistItem(Base):
     item_date_raw: Mapped[str | None] = mapped_column(String(64))
 
     import_: Mapped[ChecklistImport] = relationship(back_populates="items")
+
+
+# ---------------------------------------------------------------------------
+# Ручной ввод: СОУТ и ОПР (подробно — docs/sout-opr.md)
+# ---------------------------------------------------------------------------
+class SoutAssessment(Base):
+    """Специальная оценка условий труда (426-ФЗ) по офису. Одна запись — одна СОУТ
+    (плановая, внеплановая или в упрощённом порядке); записи образуют историю."""
+    __tablename__ = "sout_assessments"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    office_id: Mapped[int] = mapped_column(ForeignKey("offices.id", ondelete="CASCADE"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+    kind: Mapped[str] = mapped_column(String(16), default="planned")        # planned / unplanned
+    procedure: Mapped[str] = mapped_column(String(16), default="regular")   # regular / simplified
+    status: Mapped[str] = mapped_column(String(16), default="completed")    # planned / in_progress / completed
+    reason: Mapped[str | None] = mapped_column(String(32))                  # основание внеплановой
+    reason_date: Mapped[date | None] = mapped_column(Date)                  # дата наступления основания
+    due_date: Mapped[date | None] = mapped_column(Date)                     # срок проведения
+
+    contractor: Mapped[str | None] = mapped_column(String(255))             # организация-оценщик
+    contractor_reg_number: Mapped[str | None] = mapped_column(String(64))   # № в реестре
+    commission_order: Mapped[str | None] = mapped_column(String(255))       # приказ о комиссии (№, дата)
+    start_date: Mapped[date | None] = mapped_column(Date)
+    report_date: Mapped[date | None] = mapped_column(Date)                  # утверждение отчёта
+    fgis_date: Mapped[date | None] = mapped_column(Date)                    # внесение в ФГИС СОУТ
+    valid_until: Mapped[date | None] = mapped_column(Date)                  # окончание срока действия
+
+    workplaces_total: Mapped[int | None] = mapped_column(Integer)
+    workplaces_assessed: Mapped[int | None] = mapped_column(Integer)
+    analogous_workplaces: Mapped[int | None] = mapped_column(Integer)
+    employees_covered: Mapped[int | None] = mapped_column(Integer)
+
+    class_1: Mapped[int] = mapped_column(Integer, default=0)
+    class_2: Mapped[int] = mapped_column(Integer, default=0)
+    class_3_1: Mapped[int] = mapped_column(Integer, default=0)
+    class_3_2: Mapped[int] = mapped_column(Integer, default=0)
+    class_3_3: Mapped[int] = mapped_column(Integer, default=0)
+    class_3_4: Mapped[int] = mapped_column(Integer, default=0)
+    class_4: Mapped[int] = mapped_column(Integer, default=0)
+
+    declaration_submitted: Mapped[bool] = mapped_column(default=False)
+    declaration_date: Mapped[date | None] = mapped_column(Date)
+    declaration_number: Mapped[str | None] = mapped_column(String(64))
+    declaration_terminated: Mapped[bool] = mapped_column(default=False)     # наступили обстоятельства ч.5 ст.11
+
+    familiarized_date: Mapped[date | None] = mapped_column(Date)            # ознакомление завершено
+    employees_familiarized: Mapped[int | None] = mapped_column(Integer)
+    published_date: Mapped[date | None] = mapped_column(Date)               # размещено на сайте
+    measures_planned: Mapped[int | None] = mapped_column(Integer)           # мероприятия по улучшению УТ
+    measures_done: Mapped[int | None] = mapped_column(Integer)
+    notes: Mapped[str | None] = mapped_column(Text)
+
+    office: Mapped[Office] = relationship()
+
+
+class RiskAssessment(Base):
+    """Оценка профессиональных рисков (ст. 214, 218 ТК РФ, приказ Минтруда № 776н) по офису."""
+    __tablename__ = "risk_assessments"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    office_id: Mapped[int] = mapped_column(ForeignKey("offices.id", ondelete="CASCADE"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+    kind: Mapped[str] = mapped_column(String(16), default="periodic")       # initial / periodic / unplanned
+    status: Mapped[str] = mapped_column(String(16), default="completed")    # planned / in_progress / completed
+    reason: Mapped[str | None] = mapped_column(String(255))                 # основание внеплановой
+    performed_by: Mapped[str] = mapped_column(String(16), default="self")   # self / contractor
+    contractor: Mapped[str | None] = mapped_column(String(255))
+    method: Mapped[str | None] = mapped_column(String(64))
+    commission_order: Mapped[str | None] = mapped_column(String(255))
+
+    assessment_date: Mapped[date | None] = mapped_column(Date)              # утверждение результатов
+    next_review_date: Mapped[date | None] = mapped_column(Date)             # плановый пересмотр
+
+    workplaces_total: Mapped[int | None] = mapped_column(Integer)
+    workplaces_assessed: Mapped[int | None] = mapped_column(Integer)
+    professions_assessed: Mapped[int | None] = mapped_column(Integer)
+    hazards_identified: Mapped[int | None] = mapped_column(Integer)
+    risks_low: Mapped[int] = mapped_column(Integer, default=0)
+    risks_medium: Mapped[int] = mapped_column(Integer, default=0)
+    risks_high: Mapped[int] = mapped_column(Integer, default=0)
+
+    plan_approved_date: Mapped[date | None] = mapped_column(Date)           # план мероприятий
+    measures_planned: Mapped[int | None] = mapped_column(Integer)
+    measures_done: Mapped[int | None] = mapped_column(Integer)
+    employees_informed_date: Mapped[date | None] = mapped_column(Date)      # ознакомление с результатами
+    notes: Mapped[str | None] = mapped_column(Text)
+
+    office: Mapped[Office] = relationship()

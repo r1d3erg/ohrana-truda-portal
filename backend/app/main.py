@@ -3,13 +3,16 @@
 Интерактивная документация: /api/docs (Swagger UI).
 """
 from contextlib import asynccontextmanager
+from datetime import date
 
 from fastapi import APIRouter, Depends, FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from . import config, services
+from . import config, registers, services
+from .models import RiskAssessment, SoutAssessment
 from .db import get_db, init_db
 from .parser import OFFICE_CODE_RE, STATUS_LABELS, ChecklistParseError
 
@@ -55,7 +58,7 @@ def health():
 @api.get("/config", tags=["service"])
 def get_config():
     """Подписи статусов и пороги — чтобы фронтенд не дублировал эти правила."""
-    return services.public_config()
+    return {**services.public_config(), **registers.public_dictionaries()}
 
 
 # --- Загрузка сводной таблицы ----------------------------------------------
@@ -212,7 +215,147 @@ def get_office_imports(code: str, db: Session = Depends(get_db)):
 # --- Дашборд ----------------------------------------------------------------
 @api.get("/dashboard", tags=["dashboard"], summary="Сводные показатели по всем офисам")
 def get_dashboard(db: Session = Depends(get_db)):
-    return services.dashboard(db)
+    return {**services.dashboard(db), "registers": registers.dashboard_block(db)}
+
+
+# --- СОУТ и ОПР: ручной ввод -----------------------------------------------
+def Count():  # noqa: N802 — новое поле на каждый атрибут
+    return Field(None, ge=0, le=1_000_000)
+
+
+class SoutIn(BaseModel):
+    kind: str | None = Field(None, description="planned / unplanned")
+    procedure: str | None = Field(None, description="regular / simplified")
+    status: str | None = Field(None, description="planned / in_progress / completed")
+    reason: str | None = None
+    reason_date: date | None = None
+    due_date: date | None = None
+    contractor: str | None = Field(None, max_length=255)
+    contractor_reg_number: str | None = Field(None, max_length=64)
+    commission_order: str | None = Field(None, max_length=255)
+    start_date: date | None = None
+    report_date: date | None = None
+    fgis_date: date | None = None
+    valid_until: date | None = None
+    workplaces_total: int | None = Count()
+    workplaces_assessed: int | None = Count()
+    analogous_workplaces: int | None = Count()
+    employees_covered: int | None = Count()
+    class_1: int | None = Count()
+    class_2: int | None = Count()
+    class_3_1: int | None = Count()
+    class_3_2: int | None = Count()
+    class_3_3: int | None = Count()
+    class_3_4: int | None = Count()
+    class_4: int | None = Count()
+    declaration_submitted: bool = False
+    declaration_date: date | None = None
+    declaration_number: str | None = Field(None, max_length=64)
+    declaration_terminated: bool = False
+    familiarized_date: date | None = None
+    employees_familiarized: int | None = Count()
+    published_date: date | None = None
+    measures_planned: int | None = Count()
+    measures_done: int | None = Count()
+    notes: str | None = Field(None, max_length=5000)
+
+
+class OprIn(BaseModel):
+    kind: str | None = Field(None, description="initial / periodic / unplanned")
+    status: str | None = None
+    reason: str | None = Field(None, max_length=255)
+    performed_by: str | None = Field(None, description="self / contractor")
+    contractor: str | None = Field(None, max_length=255)
+    method: str | None = None
+    commission_order: str | None = Field(None, max_length=255)
+    assessment_date: date | None = None
+    next_review_date: date | None = None
+    workplaces_total: int | None = Count()
+    workplaces_assessed: int | None = Count()
+    professions_assessed: int | None = Count()
+    hazards_identified: int | None = Count()
+    risks_low: int | None = Count()
+    risks_medium: int | None = Count()
+    risks_high: int | None = Count()
+    plan_approved_date: date | None = None
+    measures_planned: int | None = Count()
+    measures_done: int | None = Count()
+    employees_informed_date: date | None = None
+    notes: str | None = Field(None, max_length=5000)
+
+
+def _clean(body: BaseModel) -> dict:
+    data = body.model_dump()
+    for k, v in data.items():
+        if isinstance(v, str):
+            data[k] = v.strip() or None
+    return data
+
+
+def _validation_error(exc: registers.ValidationFailed):
+    raise HTTPException(status_code=422, detail={"message": "Проверьте заполнение формы", "errors": exc.errors})
+
+
+def _register_routes(prefix: str, model, prepare, to_dict, summary_fn, state_fn, body_cls, title: str):
+    @api.get(f"/{prefix}", tags=[prefix], operation_id=f"{prefix}_list", summary=f"{title}: состояние по всем офисам")
+    def list_summary(db: Session = Depends(get_db)):
+        return summary_fn(db)
+
+    @api.get(f"/offices/{{code}}/{prefix}", tags=[prefix], operation_id=f"{prefix}_office", summary=f"{title}: история и состояние офиса")
+    def office_records(code: str, db: Session = Depends(get_db)):
+        try:
+            office = services.get_office(db, code)
+        except services.NotFound as exc:
+            _not_found(exc)
+        records = list(db.scalars(select(model).where(model.office_id == office.id)))
+        state = state_fn(office, records)
+        ordered = sorted(records, key=lambda r: r.id, reverse=True)
+        return {**state, "records": [to_dict(r) for r in ordered]}
+
+    @api.post(f"/offices/{{code}}/{prefix}", tags=[prefix], operation_id=f"{prefix}_create", status_code=201, summary=f"{title}: добавить запись")
+    def create_record(code: str, body: body_cls, db: Session = Depends(get_db)):  # type: ignore[valid-type]
+        try:
+            office = services.get_office(db, code)
+            data = prepare(_clean(body))
+        except services.NotFound as exc:
+            _not_found(exc)
+        except registers.ValidationFailed as exc:
+            _validation_error(exc)
+        rec = model(office_id=office.id, **data)
+        db.add(rec)
+        db.commit()
+        db.refresh(rec)
+        return to_dict(rec)
+
+    @api.put(f"/{prefix}/{{record_id}}", tags=[prefix], operation_id=f"{prefix}_update", summary=f"{title}: изменить запись")
+    def update_record(record_id: int, body: body_cls, db: Session = Depends(get_db)):  # type: ignore[valid-type]
+        rec = db.get(model, record_id)
+        if rec is None:
+            raise HTTPException(status_code=404, detail={"message": f"Запись #{record_id} не найдена"})
+        try:
+            data = prepare(_clean(body))
+        except registers.ValidationFailed as exc:
+            _validation_error(exc)
+        for k, v in data.items():
+            setattr(rec, k, v)
+        db.commit()
+        db.refresh(rec)
+        return to_dict(rec)
+
+    @api.delete(f"/{prefix}/{{record_id}}", tags=[prefix], operation_id=f"{prefix}_delete", summary=f"{title}: удалить запись")
+    def delete_record(record_id: int, db: Session = Depends(get_db)):
+        rec = db.get(model, record_id)
+        if rec is None:
+            raise HTTPException(status_code=404, detail={"message": f"Запись #{record_id} не найдена"})
+        db.delete(rec)
+        db.commit()
+        return {"deleted": record_id}
+
+
+_register_routes("sout", SoutAssessment, registers.prepare_sout, registers.sout_to_dict,
+                 registers.sout_summary, registers.sout_office_state, SoutIn, "СОУТ")
+_register_routes("opr", RiskAssessment, registers.prepare_opr, registers.opr_to_dict,
+                 registers.opr_summary, registers.opr_office_state, OprIn, "ОПР")
 
 
 app.include_router(api)
