@@ -47,6 +47,7 @@ th { color: var(--text-muted); font-weight: 600; font-size: 12px; text-transform
 .badge-ok { background: #c6f6d5; color: #276749; }
 .badge-warn { background: #feebc8; color: #c05621; }
 .badge-danger { background: #fed7d7; color: #c53030; }
+.badge-new { background: #e2e8f0; color: #4a5568; }
 .btn { padding: 8px 16px; background: #2b6cb0; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
 .login-screen { position: fixed; inset: 0; background: linear-gradient(135deg, #1a365d, #2b6cb0); display: flex; align-items: center; justify-content: center; z-index: 100; }
 .login-box { background: white; padding: 40px; border-radius: 16px; width: 400px; text-align: center; }

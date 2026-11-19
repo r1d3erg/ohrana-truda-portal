@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Если lock-файла ещё нет — создаём его (дальше сборки идут через npm ci)
+      - name: Generate package-lock.json if missing
+        id: lock
+        if: hashFiles('package-lock.json') == ''
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Commit package-lock.json
+        if: steps.lock.outcome == 'success' && github.event_name != 'pull_request'
+        run: |
+          git config user.name "r1d3erg"
+          git config user.email "33750540+r1d3erg@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "Add package-lock.json for reproducible builds"
+          git push
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t ohrana-truda-portal:ci .

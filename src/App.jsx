@@ -29,15 +29,43 @@ const MODULES = [
   { icon: '🏋️', name: 'Тренинг обучения' },
 ]
 
+// Порог индекса соответствия, начиная с которого офис считается в норме
+const GOOD_INDEX = 90
+// За сколько дней до окончания СОУТ считать её «истекающей»
+const SOUT_WARN_DAYS = 90
+const DAY_MS = 24 * 60 * 60 * 1000
+
+// Демо-даты СОУТ считаются от текущего дня, чтобы прототип не «устаревал»
+const daysFromNow = (days) => new Date(Date.now() + days * DAY_MS).toISOString().slice(0, 10)
+
+const INITIAL_OFFICES = [
+  { id: 1, name: 'Офис 1.1', resp: 'Иванов И.И.', index: 95, soutUntil: daysFromNow(400) },
+  { id: 2, name: 'Офис 1.2', resp: 'Петров П.П.', index: 88, soutUntil: daysFromNow(45) },
+  { id: 3, name: 'Офис 2.1', resp: '—', index: 72, soutUntil: daysFromNow(-20) },
+]
+
+const officeStatus = (o) => {
+  if (o.index == null) return { label: 'Новый', badge: 'badge-new' }
+  if (o.index >= GOOD_INDEX) return { label: 'Хорошо', badge: 'badge-ok' }
+  return { label: 'Требует внимания', badge: 'badge-warn' }
+}
+
+const soutState = (o, now = Date.now()) => {
+  if (!o.soutUntil) return 'none'
+  const left = new Date(o.soutUntil).getTime() - now
+  if (left < 0) return 'overdue'
+  if (left <= SOUT_WARN_DAYS * DAY_MS) return 'expiring'
+  return 'ok'
+}
+
+const formatDate = (iso) => (iso ? new Date(iso).toLocaleDateString('ru-RU') : '—')
+
 export default function App() {
   const [loggedIn, setLoggedIn] = useState(false)
   const [role, setRole] = useState('super')
   const [page, setPage] = useState('dashboard')
-  const [offices, setOffices] = useState([
-    { name: 'Офис 1.1', resp: 'Иванов И.И.', index: '95%', status: 'Хорошо' },
-    { name: 'Офис 1.2', resp: 'Петров П.П.', index: '88%', status: 'Требует внимания' },
-    { name: 'Офис 2.1', resp: '—', index: '72%', status: 'Требует внимания' },
-  ])
+  const [offices, setOffices] = useState(INITIAL_OFFICES)
+  const [nextId, setNextId] = useState(INITIAL_OFFICES.length + 1)
   const [showCreate, setShowCreate] = useState(false)
   const [newName, setNewName] = useState('')
   const [newResp, setNewResp] = useState('')
@@ -54,21 +82,30 @@ export default function App() {
     )
   }
 
+  // Показатели дашборда считаются из данных офисов, а не захардкожены
+  const indexed = offices.filter(o => o.index != null)
+  const avgIndex = indexed.length
+    ? Math.round(indexed.reduce((sum, o) => sum + o.index, 0) / indexed.length)
+    : null
+  const now = Date.now()
+  const soutExpiring = offices.filter(o => soutState(o, now) === 'expiring').length
+  const soutOverdue = offices.filter(o => soutState(o, now) === 'overdue').length
+
   const createOffice = () => {
     if (!newName.trim()) return alert('Укажите название офиса')
-    setOffices([...offices, { name: newName.trim(), resp: newResp.trim() || '—', index: '—', status: 'Новый' }])
+    setOffices([...offices, { id: nextId, name: newName.trim(), resp: newResp.trim() || '—', index: null, soutUntil: null }])
+    setNextId(nextId + 1)
     setNewName('')
     setNewResp('')
     setShowCreate(false)
   }
 
-  const assignOffice = (idx) => {
-    const current = offices[idx].resp
-    const name = prompt(`Назначить ответственного для «${offices[idx].name}»:`, current === '—' ? '' : current)
+  const assignOffice = (id) => {
+    const office = offices.find(o => o.id === id)
+    if (!office) return
+    const name = prompt(`Назначить ответственного для «${office.name}»:`, office.resp === '—' ? '' : office.resp)
     if (name !== null) {
-      const updated = [...offices]
-      updated[idx].resp = name.trim() || '—'
-      setOffices(updated)
+      setOffices(offices.map(o => (o.id === id ? { ...o, resp: name.trim() || '—' } : o)))
     }
   }
 
@@ -96,10 +133,15 @@ export default function App() {
 
         {page === 'dashboard' && (
           <div className="cards">
-            <div className="card"><div className="card-title">Индекс соответствия</div><div className="card-value success">87%</div></div>
-            <div className="card"><div className="card-title">Офисов</div><div className="card-value">142</div></div>
-            <div className="card"><div className="card-title">Истекает СОУТ</div><div className="card-value warning">12</div></div>
-            <div className="card"><div className="card-title">Просрочено</div><div className="card-value danger">5</div></div>
+            <div className="card">
+              <div className="card-title">Индекс соответствия</div>
+              <div className={`card-value ${avgIndex == null ? '' : avgIndex >= GOOD_INDEX ? 'success' : 'warning'}`}>
+                {avgIndex == null ? '—' : `${avgIndex}%`}
+              </div>
+            </div>
+            <div className="card"><div className="card-title">Офисов</div><div className="card-value">{offices.length}</div></div>
+            <div className="card"><div className="card-title">Истекает СОУТ</div><div className={`card-value ${soutExpiring ? 'warning' : ''}`}>{soutExpiring}</div></div>
+            <div className="card"><div className="card-title">Просрочено</div><div className={`card-value ${soutOverdue ? 'danger' : ''}`}>{soutOverdue}</div></div>
           </div>
         )}
 
@@ -126,17 +168,26 @@ export default function App() {
             <div className="section">
               <h2>Офисы</h2>
               <table>
-                <thead><tr><th>Офис</th><th>Ответственный</th><th>Индекс</th><th>Статус</th><th>Действия</th></tr></thead>
+                <thead><tr><th>Офис</th><th>Ответственный</th><th>Индекс</th><th>СОУТ до</th><th>Статус</th><th>Действия</th></tr></thead>
                 <tbody>
-                  {offices.map((o, i) => (
-                    <tr key={i}>
-                      <td>{o.name}</td>
-                      <td>{o.resp}</td>
-                      <td>{o.index}</td>
-                      <td><span className={`badge ${o.status === 'Хорошо' ? 'badge-ok' : 'badge-warn'}`}>{o.status}</span></td>
-                      <td>{role === 'super' && <button onClick={() => assignOffice(i)} style={{ fontSize: 12, padding: '4px 8px', border: '1px solid #cbd5e0', borderRadius: 6, background: '#fff', cursor: 'pointer' }}>Назначить</button>}</td>
-                    </tr>
-                  ))}
+                  {offices.map(o => {
+                    const status = officeStatus(o)
+                    const sout = soutState(o, now)
+                    return (
+                      <tr key={o.id}>
+                        <td>{o.name}</td>
+                        <td>{o.resp}</td>
+                        <td>{o.index == null ? '—' : `${o.index}%`}</td>
+                        <td>
+                          {formatDate(o.soutUntil)}
+                          {sout === 'overdue' && <span className="badge badge-danger" style={{ marginLeft: 8 }}>просрочена</span>}
+                          {sout === 'expiring' && <span className="badge badge-warn" style={{ marginLeft: 8 }}>истекает</span>}
+                        </td>
+                        <td><span className={`badge ${status.badge}`}>{status.label}</span></td>
+                        <td>{role === 'super' && <button onClick={() => assignOffice(o.id)} style={{ fontSize: 12, padding: '4px 8px', border: '1px solid #cbd5e0', borderRadius: 6, background: '#fff', cursor: 'pointer' }}>Назначить</button>}</td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
