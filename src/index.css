@@ -207,3 +207,4 @@ td.hm-office:hover .hm-office-code { color: var(--accent); text-decoration: unde
 
 .empty-state { text-align: center; padding: 48px 20px; }
 .empty-state p { margin: 8px 0 20px; }
+.badge { white-space: nowrap; }
