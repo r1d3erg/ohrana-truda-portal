@@ -23,6 +23,13 @@ docker compose up -d --build
 
 ## Локальная разработка
 
+**macOS, одной кнопкой:** двойной клик по `start-dev.command` в Finder (или
+`./start-dev.command` в терминале). Скрипт найдёт Python 3.10+, поставит
+зависимости, поднимет бэкенд (:8000) и фронтенд (:5173) и откроет портал в
+браузере. Остановка — Ctrl+C или закрыть окно Терминала.
+
+Вручную:
+
 ```bash
 # бэкенд — http://localhost:8000 (SQLite в backend/data/)
 cd backend
@@ -48,6 +55,7 @@ npm run dev
 - `backend/tests/` — тесты (таблица для тестов генерируется синтетически)
 - `docs/` — архитектура и подробное описание загрузки
 - `Dockerfile`, `nginx.conf`, `backend/Dockerfile`, `docker-compose.yml` — сборка и деплой
+- `start-dev.command` — локальный запуск на macOS одной кнопкой
 - `.github/workflows/ci.yml` — сборка фронтенда, тесты бэкенда, сборка образов, сквозная проверка стека
 
 ## Важно

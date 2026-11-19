@@ -366,29 +366,111 @@ def office_imports(db: Session, office: Office) -> list[dict]:
 # Дашборд
 # ---------------------------------------------------------------------------
 def dashboard(db: Session) -> dict:
-    offices = db.scalars(select(Office)).all()
+    """Сводка по всем офисам: KPI, матрица «офис × направление», слабые места,
+    чаще всего отсутствующие документы. Считается по актуальным загрузкам."""
+    offices = db.scalars(select(Office).order_by(Office.code)).all()
     ids = [o.current_import_id for o in offices if o.current_import_id]
-    imports = db.scalars(select(ChecklistImport).where(ChecklistImport.id.in_(ids))).all() if ids else []
+    imports = {i.id: i for i in db.scalars(select(ChecklistImport).where(ChecklistImport.id.in_(ids)))} if ids else {}
 
     levels = {k: 0 for k in LEVEL_LABELS}
     for o in offices:
-        imp = next((i for i in imports if i.id == o.current_import_id), None)
+        imp = imports.get(o.current_import_id)
         levels[level_for(imp.readiness if imp else None)] += 1
 
     docs = empty_counts()
-    for i in imports:
+    for i in imports.values():
         for k, v in _counts(i).items():
             docs[k] += v
 
-    by_cat: list[dict] = []
+    rows = []
     if ids:
         rows = db.execute(
-            select(ChecklistItem.category, ChecklistItem.status).where(ChecklistItem.import_id.in_(ids))
+            select(ChecklistItem.import_id, ChecklistItem.number, ChecklistItem.category,
+                   ChecklistItem.status, ChecklistItem.title)
+            .where(ChecklistItem.import_id.in_(ids))
+            .order_by(ChecklistItem.import_id, ChecklistItem.number)
         ).all()
-        _, by_cat = summarize([(c, s) for c, s in rows])
 
-    avg = round(sum(i.readiness for i in imports) / len(imports), 1) if imports else None
-    last = max((i.uploaded_at for i in imports), default=None)
+    # Порядок направлений — как в шаблоне (по первому появлению)
+    categories: list[str] = []
+    for r in rows:
+        if r.category not in categories:
+            categories.append(r.category)
+
+    _, by_cat = summarize([(r.category, r.status) for r in rows])
+
+    # --- Матрица офис × направление ------------------------------------------
+    per_office: dict[int, list[tuple[str, str]]] = {}
+    for r in rows:
+        per_office.setdefault(r.import_id, []).append((r.category, r.status))
+
+    prev_readiness = _previous_readiness(db, offices)
+
+    matrix = []
+    for o in offices:
+        imp = imports.get(o.current_import_id)
+        if imp is None:
+            continue
+        _, cats = summarize(per_office.get(imp.id, []))
+        cells = {}
+        for c in cats:
+            lvl = level_for(c["readiness"])
+            cells[c.pop("category")] = {**c, "level": lvl}
+        prev = prev_readiness.get(o.id)
+        matrix.append({
+            "code": o.code,
+            "name": o.name,
+            "responsible": o.responsible,
+            "readiness": imp.readiness,
+            "level": level_for(imp.readiness),
+            "check_date": _iso(imp.check_date),
+            "counts": _counts(imp),
+            "prev_readiness": prev,
+            "delta": round(imp.readiness - prev, 1) if prev is not None else None,
+            "cells": cells,
+        })
+    matrix.sort(key=lambda m: (m["readiness"], m["code"]))
+
+    # Средняя готовность направления по офисам и сколько офисов проседают
+    for c in by_cat:
+        vals = [m["cells"][c["category"]]["readiness"] for m in matrix if c["category"] in m["cells"]]
+        c["offices"] = len(vals)
+        c["offices_avg"] = round(sum(vals) / len(vals), 1) if vals else None
+        c["offices_below_good"] = sum(1 for v in vals if v < config.READINESS_GOOD)
+        c["level"] = level_for(c["readiness"])
+
+    # --- Слабые места: пары офис × направление ниже порога «Хорошо» -----------
+    weak = []
+    for m in matrix:
+        for cat, cell in m["cells"].items():
+            if cell["readiness"] < config.READINESS_GOOD:
+                weak.append({
+                    "code": m["code"], "name": m["name"], "category": cat,
+                    "readiness": cell["readiness"], "level": cell["level"],
+                    "total": cell["total"], "done": cell[STATUS_DONE],
+                    "in_progress": cell[STATUS_IN_PROGRESS],
+                    "missing": cell[STATUS_MISSING] + cell[STATUS_NOT_SET],
+                })
+    weak.sort(key=lambda w: (w["readiness"], -w["missing"], w["code"]))
+
+    # --- Документы, которых чаще всего нет -------------------------------------
+    code_by_import = {o.current_import_id: o.code for o in offices if o.current_import_id}
+    missing_docs: dict[str, dict] = {}
+    for r in rows:
+        if r.status not in (STATUS_MISSING, STATUS_NOT_SET):
+            continue
+        key = _title_key(r.title)
+        d = missing_docs.setdefault(key, {
+            "title": r.title, "category": r.category, "number": r.number, "offices": [],
+        })
+        d["offices"].append(code_by_import[r.import_id])
+    top_missing = sorted(missing_docs.values(), key=lambda d: (-len(d["offices"]), d["number"]))
+    for d in top_missing:
+        d["count"] = len(d["offices"])
+        d["share"] = round(d["count"] * 100 / len(imports), 1) if imports else 0.0
+
+    avg = round(sum(i.readiness for i in imports.values()) / len(imports), 1) if imports else None
+    last = max((i.uploaded_at for i in imports.values()), default=None)
     return {
         "offices_total": len(offices),
         "offices_with_data": len(imports),
@@ -396,9 +478,40 @@ def dashboard(db: Session) -> dict:
         "avg_level": level_for(avg),
         "levels": levels,
         "documents": {**docs, "readiness": readiness(docs[STATUS_DONE], docs["total"])},
+        "categories": categories,
         "by_category": by_cat,
+        "matrix": matrix,
+        "weak_spots": weak[:20],
+        "weak_spots_total": len(weak),
+        "top_missing": top_missing[:10],
+        "top_missing_total": len(top_missing),
+        "thresholds": {"good": config.READINESS_GOOD, "warn": config.READINESS_WARN},
         "last_uploaded_at": _iso(last),
     }
+
+
+def _previous_readiness(db: Session, offices: list[Office]) -> dict[int, float]:
+    """Готовность по предыдущей (до актуальной) проверке каждого офиса — для динамики."""
+    out: dict[int, float] = {}
+    office_ids = [o.id for o in offices if o.current_import_id]
+    if not office_ids:
+        return out
+    current = {o.id: o.current_import_id for o in offices}
+    rows = db.execute(
+        select(ChecklistImport.office_id, ChecklistImport.id, ChecklistImport.readiness)
+        .where(ChecklistImport.office_id.in_(office_ids))
+        .order_by(ChecklistImport.office_id, ChecklistImport.check_date.desc(), ChecklistImport.id.desc())
+    ).all()
+    seen_current: set[int] = set()
+    for office_id, imp_id, r in rows:
+        if office_id in out:
+            continue
+        if imp_id == current.get(office_id):
+            seen_current.add(office_id)
+            continue
+        if office_id in seen_current:
+            out[office_id] = r
+    return out
 
 
 def public_config() -> dict:

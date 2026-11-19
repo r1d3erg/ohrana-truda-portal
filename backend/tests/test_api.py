@@ -137,3 +137,53 @@ def test_office_create_and_assign_responsible(client):
 def test_unknown_office_404(client):
     assert client.get("/api/offices/nope").status_code == 404
     assert client.get("/api/offices/nope/checklist").status_code == 404
+
+
+def _with_statuses(statuses):
+    return [tuple(list(i[:4]) + [s]) for i, s in zip(DEFAULT_ITEMS, statuses)]
+
+
+def test_dashboard_matrix_weak_spots_and_top_missing(client):
+    # офис a1: 50% (как в DEFAULT_ITEMS); офис b2: всё «Есть», кроме планов эвакуации
+    upload(client, build_checklist(office="a1"))
+    upload(client, build_checklist(office="b2", items=_with_statuses(
+        ["Есть", "Есть", "Есть", "Есть", "Есть", "Нет"])))
+    client.post("/api/offices", json={"code": "c3"})  # офис без данных
+
+    d = client.get("/api/dashboard").json()
+    assert d["categories"] == ["Охрана труда", "Первая помощь", "Пожарная безопасность"]
+    assert d["offices_with_data"] == 2 and d["levels"]["new"] == 1
+
+    # матрица: худшие офисы сверху
+    assert [m["code"] for m in d["matrix"]] == ["a1", "b2"]
+    a1 = d["matrix"][0]
+    assert a1["cells"]["Охрана труда"]["readiness"] == 33.3
+    assert a1["cells"]["Охрана труда"]["level"] == "bad"
+    assert a1["cells"]["Первая помощь"]["readiness"] == 100.0
+    assert a1["delta"] is None
+
+    fire = next(c for c in d["by_category"] if c["category"] == "Пожарная безопасность")
+    assert fire["offices"] == 2 and fire["offices_below_good"] == 2  # 50% и 50%
+    assert fire["offices_avg"] == 50.0
+
+    # слабые места: самые низкие пары офис × направление первыми
+    assert d["weak_spots"][0] == {
+        "code": "a1", "name": "a1", "category": "Охрана труда", "readiness": 33.3, "level": "bad",
+        "total": 3, "done": 1, "in_progress": 1, "missing": 1,
+    }
+    assert {(w["code"], w["category"]) for w in d["weak_spots"]} == {
+        ("a1", "Охрана труда"), ("a1", "Пожарная безопасность"), ("b2", "Пожарная безопасность")}
+
+    # чаще всего отсутствует
+    titles = {t["title"]: t for t in d["top_missing"]}
+    assert titles["Журнал вводного инструктажа"]["offices"] == ["a1"]
+    assert titles["Планы эвакуации"]["offices"] == ["b2"]
+    assert titles["Планы эвакуации"]["share"] == 50.0
+
+
+def test_dashboard_delta_vs_previous_check(client):
+    upload(client, build_checklist(office="a1", check_date="01.08.2026"))
+    upload(client, build_checklist(office="a1", check_date="01.10.2026", items=_with_statuses(
+        ["Есть", "Есть", "Есть", "Есть", "Есть", "В работе"])))
+    m = client.get("/api/dashboard").json()["matrix"][0]
+    assert m["readiness"] == 83.3 and m["prev_readiness"] == 50.0 and m["delta"] == 33.3

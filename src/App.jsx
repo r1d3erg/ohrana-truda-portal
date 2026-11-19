@@ -43,6 +43,8 @@ export default function App() {
   const [offices, setOffices] = useState([])
   const [dashboard, setDashboard] = useState(null)
   const [selectedOffice, setSelectedOffice] = useState(null)
+  // Переход с дашборда в документы офиса с готовым фильтром
+  const [docFocus, setDocFocus] = useState(null)
   const [error, setError] = useState(null)
 
   // Данные портала берутся из API; reload вызывается после любых изменений
@@ -77,6 +79,13 @@ export default function App() {
 
   const openDocuments = (code) => {
     setSelectedOffice(code)
+    setDocFocus(null)
+    setPage('documents')
+  }
+
+  const drill = ({ code, category = '', status = '', q = '' }) => {
+    setSelectedOffice(code)
+    setDocFocus({ category, status, q, nonce: Date.now() })
     setPage('documents')
   }
 
@@ -104,7 +113,10 @@ export default function App() {
 
         <ErrorBox error={error} />
 
-        {page === 'dashboard' && <Dashboard data={dashboard} onOpenOffices={() => setPage('offices')} />}
+        {page === 'dashboard' && (
+          <Dashboard data={dashboard} onOpenOffices={() => setPage('offices')}
+                     onOpenDocuments={() => setPage('documents')} onDrill={drill} />
+        )}
 
         {page === 'offices' && (
           <Offices offices={offices} role={role} onChanged={reload} onOpenDocuments={openDocuments} />
@@ -112,7 +124,7 @@ export default function App() {
 
         {page === 'documents' && (
           <Documents offices={offices} role={role} selectedCode={selectedOffice}
-                     onSelect={setSelectedOffice} onChanged={reload} />
+                     onSelect={setSelectedOffice} onChanged={reload} focus={docFocus} />
         )}
 
         {page === 'modules' && (

@@ -105,12 +105,23 @@ function UploadResult({ result }) {
 // ---------------------------------------------------------------------------
 // Документы выбранного офиса
 // ---------------------------------------------------------------------------
-function OfficeChecklist({ offices, code, onSelect, role, reloadKey, onChanged }) {
+function OfficeChecklist({ offices, code, onSelect, role, reloadKey, onChanged, focus }) {
   const [card, setCard] = useState(null)
   const [items, setItems] = useState([])
   const [history, setHistory] = useState([])
-  const [filters, setFilters] = useState({ status: '', category: '', q: '' })
+  const [filters, setFilters] = useState({
+    status: focus?.status || '', category: focus?.category || '', q: focus?.q || '',
+  })
   const [error, setError] = useState(null)
+  const sectionRef = useRef(null)
+
+  // Переход с дашборда: выставить фильтр и прокрутить к чек-листу
+  useEffect(() => {
+    if (!focus) return
+    setFilters({ status: focus.status || '', category: focus.category || '', q: focus.q || '' })
+    const t = setTimeout(() => sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150)
+    return () => clearTimeout(t)
+  }, [focus?.nonce])
 
   useEffect(() => {
     if (!code) return
@@ -143,7 +154,7 @@ function OfficeChecklist({ offices, code, onSelect, role, reloadKey, onChanged }
   let lastSub = null
 
   return (
-    <div className="section">
+    <div className="section" ref={sectionRef}>
       <div className="section-head">
         <h2>Документы офиса</h2>
         <select className="input" value={code || ''} onChange={e => onSelect(e.target.value || null)}>
@@ -241,14 +252,14 @@ function OfficeChecklist({ offices, code, onSelect, role, reloadKey, onChanged }
   )
 }
 
-export default function Documents({ offices, role, selectedCode, onSelect, onChanged }) {
+export default function Documents({ offices, role, selectedCode, onSelect, onChanged, focus }) {
   const [reloadKey, setReloadKey] = useState(0)
   const changed = () => { setReloadKey(k => k + 1); onChanged() }
   return (
     <>
       <UploadSection onUploaded={(code) => { onSelect(code); changed() }} />
       <OfficeChecklist offices={offices} code={selectedCode} onSelect={onSelect} role={role}
-                       reloadKey={reloadKey} onChanged={changed} />
+                       reloadKey={reloadKey} onChanged={changed} focus={focus} />
     </>
   )
 }
