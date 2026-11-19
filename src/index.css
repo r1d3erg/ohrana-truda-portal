@@ -131,7 +131,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 .nav-item:hover { background: var(--surface); color: var(--text); }
 .nav-item.active { background: var(--surface-2); color: var(--text); font-weight: 600; }
-.nav-item .nav-soon { margin-left: auto; font-size: var(--text-xs); color: var(--muted); font-weight: 400; }
+.nav-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-item.soon:not(.active) { opacity: 0.6; }
 
 .main { margin-left: var(--sidebar-w); flex: 1; min-width: 0; padding: 32px 40px 48px; max-width: calc(1440px + var(--sidebar-w)); }
 .header { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }

@@ -20,7 +20,7 @@ const NAV = [
     { key: 'sout', label: 'СОУТ', icon: 'clipboard-text' },
     { key: 'opr', label: 'ОПР', icon: 'warning' },
   ] },
-  { group: 'Направления', items: [
+  { group: 'Направления · в разработке', items: [
     { key: 'fire', label: 'Пожарная безопасность', icon: 'fire', soon: true },
     { key: 'electro', label: 'Электробезопасность', icon: 'lightning', soon: true },
     { key: 'go', label: 'ГО ЧС', icon: 'siren', soon: true },
@@ -139,11 +139,11 @@ export default function App() {
             <div key={g.group || 'main'}>
               {g.group && <div className="nav-group">{g.group}</div>}
               {g.items.map(i => (
-                <button key={i.key} type="button" className={`nav-item ${page === i.key ? 'active' : ''}`}
-                        aria-current={page === i.key ? 'page' : undefined} onClick={() => setPage(i.key)}>
+                <button key={i.key} type="button" className={`nav-item ${page === i.key ? 'active' : ''} ${i.soon ? 'soon' : ''}`}
+                        aria-current={page === i.key ? 'page' : undefined} onClick={() => setPage(i.key)}
+                        title={i.soon ? 'Раздел в разработке' : undefined}>
                   <Icon name={i.icon} size={20} />
-                  {i.label}
-                  {i.soon && <span className="nav-soon">скоро</span>}
+                  <span className="nav-label">{i.label}</span>
                 </button>
               ))}
             </div>
