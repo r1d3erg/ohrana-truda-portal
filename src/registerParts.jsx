@@ -1,6 +1,7 @@
 // Общие компоненты страниц «СОУТ» и «ОПР»: модальная форма, поля, предупреждения.
 import { useEffect } from 'react'
 import { fmtDate } from './api.js'
+import { Icon } from './icons.jsx'
 
 export function Modal({ title, onClose, children, footer }) {
   useEffect(() => {
@@ -10,10 +11,10 @@ export function Modal({ title, onClose, children, footer }) {
   }, [onClose])
   return (
     <div className="modal-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="modal" role="dialog" aria-modal="true">
+      <div className="modal" role="dialog" aria-modal="true" aria-label={title}>
         <div className="modal-head">
           <h2>{title}</h2>
-          <button className="modal-close" onClick={onClose} aria-label="Закрыть">×</button>
+          <button className="modal-close" onClick={onClose} aria-label="Закрыть"><Icon name="x" size={20} /></button>
         </div>
         <div className="modal-body">{children}</div>
         {footer && <div className="modal-foot">{footer}</div>}

@@ -1,7 +1,11 @@
+import { useEffect, useState } from 'react'
 import { LEVEL_BADGE, STATUS_BADGE, STATUS_LABEL, fmtPct, thresholds } from './api.js'
 
+const LEVEL_MARK = { good: '✓', warn: '!', bad: '✕', new: '·' }
+
+// Цвет никогда не единственный носитель смысла: у бейджа уровня есть значок
 export function LevelBadge({ level, label }) {
-  return <span className={`badge ${LEVEL_BADGE[level] || 'badge-new'}`}>{label}</span>
+  return <span className={`badge ${LEVEL_BADGE[level] || 'badge-new'}`}><span aria-hidden="true">{LEVEL_MARK[level] || '·'}</span>{label}</span>
 }
 
 export function StatusBadge({ status }) {
@@ -66,5 +70,31 @@ export function Progress({ value }) {
       <div className="progress-bar"><div className={`progress-fill ${cls}`} style={{ width: `${Math.min(v, 100)}%` }} /></div>
       <span>{fmtPct(value)}</span>
     </div>
+  )
+}
+
+// Скелетон вместо текста «Загрузка…»
+export function Skeleton({ lines = 4 }) {
+  return (
+    <div className="skeleton" aria-busy="true" aria-label="Загрузка">
+      {Array.from({ length: lines }, (_, i) => <i key={i} />)}
+    </div>
+  )
+}
+
+// Удаление в два шага прямо в строке вместо системного confirm()
+export function ConfirmButton({ label = 'Удалить', confirmLabel = 'Удалить?', onConfirm }) {
+  const [armed, setArmed] = useState(false)
+  useEffect(() => {
+    if (!armed) return
+    const t = setTimeout(() => setArmed(false), 4000)
+    return () => clearTimeout(t)
+  }, [armed])
+  if (!armed) return <button type="button" className="btn-small" onClick={() => setArmed(true)}>{label}</button>
+  return (
+    <span className="inline-edit">
+      <button type="button" className="btn-small danger" onClick={() => { setArmed(false); onConfirm() }}>{confirmLabel}</button>
+      <button type="button" className="btn-small" onClick={() => setArmed(false)}>Отмена</button>
+    </span>
   )
 }

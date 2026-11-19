@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { api, fmtDate, fmtDaysLeft } from '../api.js'
-import { ErrorBox, LevelBadge } from '../components.jsx'
+import { ConfirmButton, ErrorBox, LevelBadge, Skeleton } from '../components.jsx'
 import {
   AlertList, CheckField, DateField, Fieldset, Modal, NumberField, SelectField, StateCards,
   TextArea, TextField, addDays, addMonths, toBody, toForm,
@@ -173,12 +173,11 @@ function OfficeDetail({ code, cfg, role, reloadKey, onEdit, onAdd, onChanged }) 
   }, [code, reloadKey])
 
   const remove = async (r) => {
-    if (!confirm(`Удалить запись СОУТ от ${fmtDate(r.report_date || r.due_date)}?`)) return
     try { await api.deleteRegister('sout', r.id); onChanged() } catch (e) { setError(e) }
   }
 
   if (error) return <ErrorBox error={error} />
-  if (!data) return <p className="muted">Загрузка…</p>
+  if (!data) return <div className="section"><Skeleton /></div>
   const c = data.current
   return (
     <div className="section">
@@ -186,7 +185,7 @@ function OfficeDetail({ code, cfg, role, reloadKey, onEdit, onAdd, onChanged }) 
         <h2>Офис {code}: СОУТ</h2>
         <button className="btn" onClick={onAdd}>+ Добавить СОУТ</button>
       </div>
-      <h3 style={{ marginTop: 0 }}>Замечания и сроки</h3>
+      <h3 className="mt-0">Замечания и сроки</h3>
       <AlertList alerts={data.alerts} />
 
       {c && <>
@@ -205,7 +204,7 @@ function OfficeDetail({ code, cfg, role, reloadKey, onEdit, onAdd, onChanged }) 
           <div><span className="muted">На сайте</span>{c.published_date ? fmtDate(c.published_date) : 'нет'}</div>
           <div><span className="muted">Мероприятия</span>{c.measures_planned != null ? `${c.measures_done ?? 0} из ${c.measures_planned}` : '—'}</div>
         </div>
-        {c.notes && <p className="muted" style={{ marginTop: 8 }}>{c.notes}</p>}
+        {c.notes && <p className="muted mt-8">{c.notes}</p>}
       </>}
 
       <h3>История</h3>
@@ -223,7 +222,7 @@ function OfficeDetail({ code, cfg, role, reloadKey, onEdit, onAdd, onChanged }) 
                 <td><ClassBar classes={r.classes} /></td>
                 <td className="actions">
                   <button className="btn-small" onClick={() => onEdit(r)}>Изменить</button>
-                  {role === 'super' && <button className="btn-small" onClick={() => remove(r)}>Удалить</button>}
+                  {role === 'super' && <ConfirmButton confirmLabel="Удалить запись" onConfirm={() => remove(r)} />}
                 </td>
               </tr>
             ))}

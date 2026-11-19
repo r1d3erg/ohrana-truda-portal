@@ -1,9 +1,24 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Портал «Охрана труда»</title>
+    <meta name="description" content="Внутренний портал охраны труда: сводная таблица документов, индекс соответствия офисов, СОУТ и оценка профессиональных рисков." />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#181818" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preload" href="/fonts/Geist-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/Geist-SemiBold.woff2" as="font" type="font/woff2" crossorigin />
+    <script>
+      // Тема до отрисовки, чтобы не было вспышки светлого/тёмного фона
+      (function () {
+        var pref = 'system'
+        try { pref = localStorage.getItem('ot-theme') || 'system' } catch (e) {}
+        var light = pref === 'light' || (pref === 'system' && window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches)
+        document.documentElement.dataset.theme = light ? 'light' : 'dark'
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

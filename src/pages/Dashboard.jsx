@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { fmtDate, fmtDateTime, fmtPct } from '../api.js'
-import { CategoryTable } from '../components.jsx'
+import { CategoryTable, Skeleton } from '../components.jsx'
 import { AlertList } from '../registerParts.jsx'
 
 // Цвета состояний (статусная палитра): цвет никогда не единственный носитель смысла —
@@ -223,7 +223,7 @@ function Heatmap({ data, onDrill, bind, onOpenRegister }) {
           </thead>
           <tbody>
             {rows.length === 0 && (
-              <tr><td colSpan={cats.length + 4} className="muted" style={{ padding: 16 }}>Нет офисов, подходящих под фильтр</td></tr>
+              <tr><td colSpan={cats.length + 4} className="muted">Нет офисов, подходящих под фильтр</td></tr>
             )}
             {rows.map(m => (
               <tr key={m.code}>
@@ -270,7 +270,7 @@ function Heatmap({ data, onDrill, bind, onOpenRegister }) {
           </tbody>
         </table>
       </div>
-      <div className="dv-legend" style={{ marginTop: 12 }}>
+      <div className="dv-legend">
         <span><i className="dv-swatch lvl-bg-good" />✓ ≥ {data.thresholds.good}% — хорошо</span>
         <span><i className="dv-swatch lvl-bg-warn" />! {data.thresholds.warn}–{data.thresholds.good}% — требует внимания</span>
         <span><i className="dv-swatch lvl-bg-bad" />✕ &lt; {data.thresholds.warn}% — критично</span>
@@ -325,7 +325,7 @@ function RegistersBlock({ reg, onOpenRegister }) {
           <h2>Сроки и нарушения</h2>
           {reg.alerts_total > 0 && <span className="muted">{reg.alerts_bad} критичных из {reg.alerts_total}</span>}
         </div>
-        <div className="weak-list" style={{ maxHeight: 300 }}>
+        <div className="weak-list">
           <AlertList alerts={reg.alerts.slice(0, 12)} showOffice onOffice={(a) => onOpenRegister(a.kind, a.office_code)} />
         </div>
       </div>
@@ -341,7 +341,7 @@ function WeakSpots({ data, onDrill, bind }) {
   return (
     <div className="section">
       <h2>Слабые места</h2>
-      <p className="muted" style={{ marginBottom: 12 }}>Направления ниже {data.thresholds.good}% — от худших к лучшим</p>
+      <p className="muted mb-12">Направления ниже {data.thresholds.good}% — от худших к лучшим</p>
       {items.length === 0 ? <p className="lvl-good">✓ Всё в норме — проседающих направлений нет</p> : (
         <div className="weak-list">
           {items.map(w => (
@@ -367,7 +367,7 @@ function TopMissing({ data, onDrill }) {
   return (
     <div className="section">
       <h2>Чаще всего отсутствует</h2>
-      <p className="muted" style={{ marginBottom: 12 }}>Документы со статусом «Нет» — в скольких офисах</p>
+      <p className="muted mb-12">Документы со статусом «Нет» — в скольких офисах</p>
       {items.length === 0 ? <p className="lvl-good">✓ Отсутствующих документов нет</p> : (
         <div className="miss-list">
           {items.map(t => (
@@ -431,7 +431,7 @@ function CategoryBars({ data, bind }) {
 // ---------------------------------------------------------------------------
 export default function Dashboard({ data, onOpenOffices, onOpenDocuments, onDrill, onOpenRegister }) {
   const [bind, tooltip] = useTooltip()
-  if (!data) return <div className="section"><p className="muted">Загрузка…</p></div>
+  if (!data) return <div className="section"><Skeleton lines={6} /></div>
 
   if (!data.offices_with_data) {
     return (

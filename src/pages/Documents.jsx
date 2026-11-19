@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { STATUS_LABEL, api, fmtDate, fmtDateTime } from '../api.js'
-import { CategoryTable, ErrorBox, LevelBadge, Progress, StatusBadge, Warnings } from '../components.jsx'
+import { CategoryTable, ConfirmButton, ErrorBox, LevelBadge, Progress, Skeleton, StatusBadge, Warnings } from '../components.jsx'
+import { Icon } from '../icons.jsx'
 
 // ---------------------------------------------------------------------------
 // Загрузка сводной таблицы
@@ -33,15 +34,15 @@ function UploadSection({ onUploaded }) {
   return (
     <div className="section">
       <h2>Загрузка сводной таблицы</h2>
-      <p className="muted" style={{ marginBottom: 12 }}>
+      <p className="muted mb-12">
         Файл Excel (.xlsx) по шаблону «Чек-лист обязательных документов». Офис определяется по полю
         «Номер офиса» в шапке; если такого офиса нет — он будет создан.
       </p>
-      <div className="form-row" style={{ marginTop: 0 }}>
-        <input ref={inputRef} type="file" accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      <div className="upload-row">
+        <input ref={inputRef} className="input" type="file" accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                onChange={e => { setFile(e.target.files[0] || null); setResult(null); setError(null) }} />
         <button className="btn btn-secondary" disabled={busy || !file} onClick={() => send(true)}>Проверить</button>
-        <button className="btn" disabled={busy || !file} onClick={() => send(false)}>{busy ? 'Обработка…' : 'Загрузить'}</button>
+        <button className="btn" disabled={busy || !file} onClick={() => send(false)}><Icon name="upload-simple" size={20} />{busy ? 'Обработка…' : 'Загрузить'}</button>
       </div>
       <ErrorBox error={error} />
       {result && <UploadResult result={result} />}
@@ -54,7 +55,7 @@ function UploadResult({ result }) {
   const cls = result.result === 'created' ? 'alert-ok' : result.result === 'duplicate' ? 'alert-warn' : 'alert-info'
   const ch = result.changes
   return (
-    <div style={{ marginTop: 16 }}>
+    <div className="mt-16">
       <div className={`alert ${cls}`}>
         <strong>{result.message}</strong>
         <div className="muted">
@@ -71,7 +72,7 @@ function UploadResult({ result }) {
       <Warnings items={result.warnings} />
       <CategoryTable rows={result.by_category} total={result.summary} />
       {ch?.has_previous && (
-        <div style={{ marginTop: 16 }}>
+        <div className="mt-16">
           <h3>Изменения относительно предыдущей проверки</h3>
           {ch.changed.length === 0 && !ch.added.length && !ch.removed.length ? (
             <p className="muted">Статусы документов не изменились.</p>
@@ -149,7 +150,6 @@ function OfficeChecklist({ offices, code, onSelect, role, reloadKey, onChanged, 
   }, [code, filters, reloadKey])
 
   const removeImport = async (h) => {
-    if (!confirm(`Удалить загрузку от ${fmtDate(h.check_date)} (${h.filename || 'без имени'})?`)) return
     try {
       await api.deleteImport(h.id)
       onChanged()
@@ -193,8 +193,8 @@ function OfficeChecklist({ offices, code, onSelect, role, reloadKey, onChanged, 
           <h3>Сводка по разделам</h3>
           <CategoryTable rows={card.by_category} total={{ ...card.counts, readiness: card.readiness }} />
 
-          <h3 style={{ marginTop: 24, scrollMarginTop: 16 }} ref={checklistRef}>Чек-лист</h3>
-          <div className="form-row" style={{ marginTop: 0, marginBottom: 12 }}>
+          <h3 className="mt-24" style={{ scrollMarginTop: 16 }} ref={checklistRef}>Чек-лист</h3>
+          <div className="upload-row mb-12">
             <select className="input" value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })}>
               <option value="">Все статусы</option>
               {Object.entries(STATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -239,7 +239,7 @@ function OfficeChecklist({ offices, code, onSelect, role, reloadKey, onChanged, 
 
       {code && history.length > 0 && (
         <>
-          <h3 style={{ marginTop: 24 }}>История загрузок</h3>
+          <h3 className="mt-24">История загрузок</h3>
           <table>
             <thead><tr><th>Дата проверки</th><th>Загружено</th><th>Файл</th><th>Проверил</th><th>Готовность</th><th></th></tr></thead>
             <tbody>
@@ -250,7 +250,7 @@ function OfficeChecklist({ offices, code, onSelect, role, reloadKey, onChanged, 
                   <td>{h.filename || '—'}</td>
                   <td>{h.inspector || '—'}</td>
                   <td><Progress value={h.readiness} /></td>
-                  <td>{role === 'super' && <button className="btn-small" onClick={() => removeImport(h)}>Удалить</button>}</td>
+                  <td>{role === 'super' && <ConfirmButton confirmLabel="Удалить загрузку" onConfirm={() => removeImport(h)} />}</td>
                 </tr>
               ))}
             </tbody>
