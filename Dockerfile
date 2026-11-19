@@ -1,5 +1,5 @@
 # --- Этап 1: сборка React-приложения ---
-FROM node:20-alpine AS build
+FROM node:22-alpine AS build
 WORKDIR /app
 
 # Сначала только манифесты — слой с зависимостями кэшируется
