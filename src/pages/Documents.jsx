@@ -114,13 +114,22 @@ function OfficeChecklist({ offices, code, onSelect, role, reloadKey, onChanged, 
   })
   const [error, setError] = useState(null)
   const sectionRef = useRef(null)
+  const checklistRef = useRef(null)
 
-  // Переход с дашборда: выставить фильтр и прокрутить к чек-листу
+  // Переход с дашборда: выставить фильтр и прокрутить к чек-листу,
+  // когда данные офиса загрузятся (ждём появления блока до 3 с)
   useEffect(() => {
     if (!focus) return
     setFilters({ status: focus.status || '', category: focus.category || '', q: focus.q || '' })
-    const t = setTimeout(() => sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150)
-    return () => clearTimeout(t)
+    let tries = 0
+    const timer = setInterval(() => {
+      const el = checklistRef.current
+      if (el || ++tries > 30) {
+        clearInterval(timer)
+        ;(el || sectionRef.current)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    }, 100)
+    return () => clearInterval(timer)
   }, [focus?.nonce])
 
   useEffect(() => {
@@ -184,7 +193,7 @@ function OfficeChecklist({ offices, code, onSelect, role, reloadKey, onChanged, 
           <h3>Сводка по разделам</h3>
           <CategoryTable rows={card.by_category} total={{ ...card.counts, readiness: card.readiness }} />
 
-          <h3 style={{ marginTop: 24 }}>Чек-лист</h3>
+          <h3 style={{ marginTop: 24, scrollMarginTop: 16 }} ref={checklistRef}>Чек-лист</h3>
           <div className="form-row" style={{ marginTop: 0, marginBottom: 12 }}>
             <select className="input" value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })}>
               <option value="">Все статусы</option>
