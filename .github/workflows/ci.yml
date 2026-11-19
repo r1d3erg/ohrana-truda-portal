@@ -73,3 +73,33 @@ jobs:
 
       - name: Build backend image
         run: docker build -t ohrana-truda-backend:ci ./backend
+
+  e2e:
+    # Весь стек как в продакшене: nginx портала -> backend -> PostgreSQL
+    needs: [frontend, backend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Start stack
+        run: |
+          cp .env.example .env
+          docker compose up -d --build --wait
+
+      - name: Upload checklist through portal proxy
+        run: |
+          pip install openpyxl
+          python -c "import sys; sys.path.insert(0, 'backend/tests'); from factory import build_checklist; open('/tmp/t.xlsx', 'wb').write(build_checklist(office='e2e-1'))"
+          curl -fsS http://localhost:8080/api/health
+          curl -fsS -F "file=@/tmp/t.xlsx" http://localhost:8080/api/imports | tee /tmp/upload.json
+          python -c "import json; r = json.load(open('/tmp/upload.json')); assert r['result'] == 'created', r; assert r['summary']['readiness'] == 50.0, r"
+          curl -fsS http://localhost:8080/api/offices | python -c "import json, sys; o = json.load(sys.stdin); assert o[0]['code'] == 'e2e-1' and o[0]['readiness'] == 50.0, o; print(o)"
+          curl -fsS http://localhost:8080/ | grep -q '<div id="root">'
+
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs
