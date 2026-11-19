@@ -1,15 +1,20 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { api, setThresholds } from './api.js'
+import { ErrorBox } from './components.jsx'
+import Dashboard from './pages/Dashboard.jsx'
+import Documents from './pages/Documents.jsx'
+import Offices from './pages/Offices.jsx'
 
 const PAGES = {
   dashboard: 'Дашборд',
   offices: 'Офисы',
+  documents: 'Документы',
   modules: 'Модули',
   sout: 'СОУТ',
   opr: 'ОПР',
   fire: 'Пожарная безопасность',
   electro: 'Электробезопасность',
   go: 'ГО ЧС',
-  documents: 'Документы',
   notifications: 'Уведомления',
   feedback: 'Обратная связь',
 }
@@ -29,46 +34,34 @@ const MODULES = [
   { icon: '🏋️', name: 'Тренинг обучения' },
 ]
 
-// Порог индекса соответствия, начиная с которого офис считается в норме
-const GOOD_INDEX = 90
-// За сколько дней до окончания СОУТ считать её «истекающей»
-const SOUT_WARN_DAYS = 90
-const DAY_MS = 24 * 60 * 60 * 1000
-
-// Демо-даты СОУТ считаются от текущего дня, чтобы прототип не «устаревал»
-const daysFromNow = (days) => new Date(Date.now() + days * DAY_MS).toISOString().slice(0, 10)
-
-const INITIAL_OFFICES = [
-  { id: 1, name: 'Офис 1.1', resp: 'Иванов И.И.', index: 95, soutUntil: daysFromNow(400) },
-  { id: 2, name: 'Офис 1.2', resp: 'Петров П.П.', index: 88, soutUntil: daysFromNow(45) },
-  { id: 3, name: 'Офис 2.1', resp: '—', index: 72, soutUntil: daysFromNow(-20) },
-]
-
-const officeStatus = (o) => {
-  if (o.index == null) return { label: 'Новый', badge: 'badge-new' }
-  if (o.index >= GOOD_INDEX) return { label: 'Хорошо', badge: 'badge-ok' }
-  return { label: 'Требует внимания', badge: 'badge-warn' }
-}
-
-const soutState = (o, now = Date.now()) => {
-  if (!o.soutUntil) return 'none'
-  const left = new Date(o.soutUntil).getTime() - now
-  if (left < 0) return 'overdue'
-  if (left <= SOUT_WARN_DAYS * DAY_MS) return 'expiring'
-  return 'ok'
-}
-
-const formatDate = (iso) => (iso ? new Date(iso).toLocaleDateString('ru-RU') : '—')
+const IMPLEMENTED = ['dashboard', 'offices', 'documents', 'modules', 'feedback']
 
 export default function App() {
   const [loggedIn, setLoggedIn] = useState(false)
   const [role, setRole] = useState('super')
   const [page, setPage] = useState('dashboard')
-  const [offices, setOffices] = useState(INITIAL_OFFICES)
-  const [nextId, setNextId] = useState(INITIAL_OFFICES.length + 1)
-  const [showCreate, setShowCreate] = useState(false)
-  const [newName, setNewName] = useState('')
-  const [newResp, setNewResp] = useState('')
+  const [offices, setOffices] = useState([])
+  const [dashboard, setDashboard] = useState(null)
+  const [selectedOffice, setSelectedOffice] = useState(null)
+  const [error, setError] = useState(null)
+
+  // Данные портала берутся из API; reload вызывается после любых изменений
+  const reload = useCallback(async () => {
+    try {
+      const [o, d] = await Promise.all([api.offices(), api.dashboard()])
+      setOffices(o)
+      setDashboard(d)
+      setError(null)
+    } catch (e) {
+      setError(e)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!loggedIn) return
+    api.config().then(setThresholds).catch(() => {})
+    reload()
+  }, [loggedIn, reload])
 
   if (!loggedIn) {
     return (
@@ -82,31 +75,9 @@ export default function App() {
     )
   }
 
-  // Показатели дашборда считаются из данных офисов, а не захардкожены
-  const indexed = offices.filter(o => o.index != null)
-  const avgIndex = indexed.length
-    ? Math.round(indexed.reduce((sum, o) => sum + o.index, 0) / indexed.length)
-    : null
-  const now = Date.now()
-  const soutExpiring = offices.filter(o => soutState(o, now) === 'expiring').length
-  const soutOverdue = offices.filter(o => soutState(o, now) === 'overdue').length
-
-  const createOffice = () => {
-    if (!newName.trim()) return alert('Укажите название офиса')
-    setOffices([...offices, { id: nextId, name: newName.trim(), resp: newResp.trim() || '—', index: null, soutUntil: null }])
-    setNextId(nextId + 1)
-    setNewName('')
-    setNewResp('')
-    setShowCreate(false)
-  }
-
-  const assignOffice = (id) => {
-    const office = offices.find(o => o.id === id)
-    if (!office) return
-    const name = prompt(`Назначить ответственного для «${office.name}»:`, office.resp === '—' ? '' : office.resp)
-    if (name !== null) {
-      setOffices(offices.map(o => (o.id === id ? { ...o, resp: name.trim() || '—' } : o)))
-    }
+  const openDocuments = (code) => {
+    setSelectedOffice(code)
+    setPage('documents')
   }
 
   return (
@@ -131,67 +102,17 @@ export default function App() {
           <button className={`role-btn ${role === 'office' ? 'active' : ''}`} onClick={() => setRole('office')}>Ответственный офиса</button>
         </div>
 
-        {page === 'dashboard' && (
-          <div className="cards">
-            <div className="card">
-              <div className="card-title">Индекс соответствия</div>
-              <div className={`card-value ${avgIndex == null ? '' : avgIndex >= GOOD_INDEX ? 'success' : 'warning'}`}>
-                {avgIndex == null ? '—' : `${avgIndex}%`}
-              </div>
-            </div>
-            <div className="card"><div className="card-title">Офисов</div><div className="card-value">{offices.length}</div></div>
-            <div className="card"><div className="card-title">Истекает СОУТ</div><div className={`card-value ${soutExpiring ? 'warning' : ''}`}>{soutExpiring}</div></div>
-            <div className="card"><div className="card-title">Просрочено</div><div className={`card-value ${soutOverdue ? 'danger' : ''}`}>{soutOverdue}</div></div>
-          </div>
-        )}
+        <ErrorBox error={error} />
+
+        {page === 'dashboard' && <Dashboard data={dashboard} onOpenOffices={() => setPage('offices')} />}
 
         {page === 'offices' && (
-          <>
-            {role === 'super' && (
-              <div className="section">
-                <button className="btn" onClick={() => setShowCreate(!showCreate)}>+ Создать офис</button>
-                {showCreate && (
-                  <div style={{ marginTop: 16, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'end' }}>
-                    <div>
-                      <label style={{ fontSize: 13, color: '#718096' }}>Название офиса</label><br />
-                      <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Офис 3.1" style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 8, marginTop: 4 }} />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: 13, color: '#718096' }}>Ответственный</label><br />
-                      <input value={newResp} onChange={e => setNewResp(e.target.value)} placeholder="Иванов И.И." style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 8, marginTop: 4 }} />
-                    </div>
-                    <button className="btn" onClick={createOffice}>Создать</button>
-                  </div>
-                )}
-              </div>
-            )}
-            <div className="section">
-              <h2>Офисы</h2>
-              <table>
-                <thead><tr><th>Офис</th><th>Ответственный</th><th>Индекс</th><th>СОУТ до</th><th>Статус</th><th>Действия</th></tr></thead>
-                <tbody>
-                  {offices.map(o => {
-                    const status = officeStatus(o)
-                    const sout = soutState(o, now)
-                    return (
-                      <tr key={o.id}>
-                        <td>{o.name}</td>
-                        <td>{o.resp}</td>
-                        <td>{o.index == null ? '—' : `${o.index}%`}</td>
-                        <td>
-                          {formatDate(o.soutUntil)}
-                          {sout === 'overdue' && <span className="badge badge-danger" style={{ marginLeft: 8 }}>просрочена</span>}
-                          {sout === 'expiring' && <span className="badge badge-warn" style={{ marginLeft: 8 }}>истекает</span>}
-                        </td>
-                        <td><span className={`badge ${status.badge}`}>{status.label}</span></td>
-                        <td>{role === 'super' && <button onClick={() => assignOffice(o.id)} style={{ fontSize: 12, padding: '4px 8px', border: '1px solid #cbd5e0', borderRadius: 6, background: '#fff', cursor: 'pointer' }}>Назначить</button>}</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </>
+          <Offices offices={offices} role={role} onChanged={reload} onOpenDocuments={openDocuments} />
+        )}
+
+        {page === 'documents' && (
+          <Documents offices={offices} role={role} selectedCode={selectedOffice}
+                     onSelect={setSelectedOffice} onChanged={reload} />
         )}
 
         {page === 'modules' && (
@@ -211,10 +132,11 @@ export default function App() {
             <details open><summary>Что такое СОУТ?</summary><p>СОУТ — специальная оценка условий труда. Обязательная процедура измерения вредных и опасных факторов на рабочих местах.</p></details>
             <details><summary>Что такое ОПР?</summary><p>ОПР — оценка профессиональных рисков. Выявление опасностей и разработка мер по их снижению.</p></details>
             <details><summary>Что такое аналогичные рабочие места?</summary><p>Аналогичные рабочие места позволяют проводить СОУТ только на 20% мест (не менее 2).</p></details>
+            <details><summary>Как обновить индекс соответствия офиса?</summary><p>Заполните сводную таблицу «Чек-лист обязательных документов» и загрузите её в разделе «Документы». Индекс = доля документов со статусом «Есть».</p></details>
           </div>
         )}
 
-        {!['dashboard', 'offices', 'modules', 'feedback'].includes(page) && (
+        {!IMPLEMENTED.includes(page) && (
           <div className="section">
             <h2>{PAGES[page]}</h2>
             <p>Раздел в разработке. Здесь будут данные по офисам.</p>

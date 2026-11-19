@@ -5,6 +5,10 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    host: true
-  }
+    host: true,
+    // В режиме разработки запросы /api проксируются на локальный бэкенд
+    proxy: {
+      '/api': process.env.VITE_API_PROXY || 'http://localhost:8000',
+    },
+  },
 })

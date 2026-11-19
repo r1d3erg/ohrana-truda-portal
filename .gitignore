@@ -20,3 +20,12 @@ pnpm-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
+
+# Python (backend)
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+backend/data/
+*.db

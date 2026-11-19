@@ -3,28 +3,41 @@ services:
     build: .
     ports:
       - "8080:80"
+    depends_on:
+      - backend
     restart: unless-stopped
     container_name: ohrana-truda-portal
 
-  # Заготовка для будущего backend.
-  # Учётные данные берутся из файла .env (см. .env.example), не хранятся в репозитории.
-  # backend:
-  #   build: ./backend
-  #   ports:
-  #     - "8000:8000"
-  #   environment:
-  #     - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-  #   depends_on:
-  #     - db
+  backend:
+    build: ./backend
+    # Наружу не публикуется: портал ходит в API через nginx (/api → backend:8000)
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-10}
+      READINESS_GOOD: ${READINESS_GOOD:-90}
+      READINESS_WARN: ${READINESS_WARN:-70}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    container_name: ohrana-truda-backend
 
-  # db:
-  #   image: postgres:16-alpine
-  #   environment:
-  #     POSTGRES_DB: ${POSTGRES_DB}
-  #     POSTGRES_USER: ${POSTGRES_USER}
-  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-  #   volumes:
-  #     - pgdata:/var/lib/postgresql/data
+  db:
+    image: postgres:16-alpine
+    # Учётные данные — из файла .env (см. .env.example), в репозитории не хранятся
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    container_name: ohrana-truda-db
 
-# volumes:
-#   pgdata:
+volumes:
+  pgdata:
