@@ -26,6 +26,9 @@ const STATE_ITEMS = [
   ['expired', 'Срок истёк', 'bad'], ['planned', 'Запланирована', 'warn'], ['none', 'Нет данных', 'new'],
 ]
 
+// Цвет бейджа — по самому статусу; критичные замечания показывает колонка «Замечания»
+const STATE_LEVEL = Object.fromEntries(STATE_ITEMS.map(([k, , l]) => [k, l]))
+
 const EMPTY = { kind: 'planned', procedure: 'regular', status: 'completed' }
 
 // Полоса по классам: 1–2 — допустимые, 3.1–3.2 — вредные, 3.3–4 — вредные высоких степеней и опасные
@@ -280,7 +283,7 @@ export default function Sout({ cfg, role, focusCode, onChanged }) {
                   <tr key={s.office_code} className={selected === s.office_code ? 'row-selected' : ''}
                       onClick={() => setSelected(s.office_code)}>
                     <td><strong>{s.office_code}</strong>{s.office_name !== s.office_code && <div className="muted">{s.office_name}</div>}</td>
-                    <td><LevelBadge level={s.level} label={s.state_label} /></td>
+                    <td><LevelBadge level={STATE_LEVEL[s.state] || s.level} label={s.state_label} /></td>
                     <td>{c ? (c.declared_indefinite ? <span className="muted">декларация</span> : <>{fmtDate(c.valid_until)}<div className={`muted ${c.days_left < 0 ? 'lvl-bad' : ''}`}>{fmtDaysLeft(c.days_left)}</div></>) : '—'}</td>
                     <td><Coverage assessed={c?.workplaces_assessed} total={c?.workplaces_total} /></td>
                     <td><ClassBar classes={c?.classes} /></td>

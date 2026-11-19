@@ -18,6 +18,9 @@ const STATE_ITEMS = [
   ['ok', 'Действует', 'good'], ['review_soon', 'Скоро пересмотр', 'warn'],
   ['review_overdue', 'Пересмотр просрочен', 'bad'], ['planned', 'Запланирована', 'warn'], ['none', 'Нет данных', 'new'],
 ]
+// Цвет бейджа — по самому статусу; критичные замечания показывает колонка «Замечания»
+const STATE_LEVEL = Object.fromEntries(STATE_ITEMS.map(([k, , l]) => [k, l]))
+
 const EMPTY = { kind: 'periodic', status: 'completed', performed_by: 'self', method: 'matrix' }
 
 function RiskBar({ r }) {
@@ -232,7 +235,7 @@ export default function Opr({ cfg, role, focusCode, onChanged }) {
                   <tr key={s.office_code} className={selected === s.office_code ? 'row-selected' : ''}
                       onClick={() => setSelected(s.office_code)}>
                     <td><strong>{s.office_code}</strong>{s.office_name !== s.office_code && <div className="muted">{s.office_name}</div>}</td>
-                    <td><LevelBadge level={s.level} label={s.state_label} /></td>
+                    <td><LevelBadge level={STATE_LEVEL[s.state] || s.level} label={s.state_label} /></td>
                     <td>{fmtDate(c?.assessment_date)}</td>
                     <td>{c ? <>{fmtDate(c.next_review_date)}<div className={`muted ${c.days_to_review < 0 ? 'lvl-bad' : ''}`}>{fmtDaysLeft(c.days_to_review)}</div></> : '—'}</td>
                     <td><RiskBar r={c} /></td>
