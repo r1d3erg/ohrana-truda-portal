@@ -196,7 +196,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 input[type="file"].input { padding: 4px; }
 .field-label { font-size: var(--text-xs); line-height: var(--lh-xs); color: var(--muted); font-weight: 500; }
 .form-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; margin-top: 16px; }
-.form-row > div { display: flex; flex-direction: column; gap: 4px; }
+.form-row > div:not(.seg-control) { display: flex; flex-direction: column; gap: 4px; }
 .check { display: inline-flex; gap: 8px; align-items: center; font-size: var(--text-sm); cursor: pointer; color: var(--muted); }
 .check input { accent-color: var(--accent); }
 .chip { background: var(--surface-2); color: var(--text); border-radius: var(--r-md); padding: 2px 8px; font-size: var(--text-xs); line-height: var(--lh-xs); font-weight: 500; }
@@ -496,5 +496,6 @@ td.hm-office:hover .hm-office-code { text-decoration: underline; text-underline-
 .exam-foot { display: flex; justify-content: space-between; gap: 16px; margin-top: 16px; font-size: var(--text-sm); }
 .exam-result { display: flex; gap: 40px; align-items: center; flex-wrap: wrap; }
 .exam-result > div:first-child { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.exam-result .exam-facts { flex: 1; min-width: 288px; }
 .exam-score { font-size: 60px; line-height: 1; font-weight: 600; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
 .exam-review { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
