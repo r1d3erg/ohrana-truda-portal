@@ -457,3 +457,44 @@ td.hm-office:hover .hm-office-code { text-decoration: underline; text-underline-
   .section, .kpi, .module-card, .login-box, .modal { animation: fade var(--t-color) linear both !important; }
   .btn:active, .btn-small:active, .chip:active, .state-card:active, .hm-cell:hover { transform: none; }
 }
+
+/* --- Вопросы и ответы ------------------------------------------------------ */
+.faq-search { width: min(352px, 100%); }
+.chips-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+.chip.chip-active { background: var(--accent); color: var(--accent-contrast); }
+.faq-item { display: flex; flex-direction: column; gap: 8px; }
+.faq-cat { font-size: var(--text-xs); line-height: var(--lh-xs); color: var(--muted); font-weight: 500; }
+.faq-basis { margin-top: auto; padding-top: 8px; font-size: var(--text-xs); line-height: var(--lh-xs); color: var(--muted); }
+
+/* --- Тренажёр проверки знаний --------------------------------------------- */
+.exam-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(144px, 1fr)); gap: 16px; margin: 8px 0; }
+.exam-facts > div { display: flex; flex-direction: column; gap: 4px; }
+.exam-facts strong { font-size: var(--text-xl); line-height: var(--lh-xl); font-weight: 600; font-variant-numeric: tabular-nums; }
+.exam-runner { max-width: 896px; }
+.exam-top { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.exam-progress { margin: 12px 0 24px; }
+.exam-q { font-size: var(--text-xl) !important; line-height: var(--lh-xl) !important; max-width: 65ch; }
+.exam-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.exam-option {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; cursor: pointer;
+  padding: 12px 16px; border-radius: var(--r-xl); border: 1px solid transparent; background: var(--surface-2);
+  font-size: var(--text-base); line-height: var(--lh-base);
+  transition: background-color var(--t-color) var(--ease), border-color var(--t-color) var(--ease), transform var(--t-move) var(--ease);
+}
+.exam-option:hover { background: var(--border); }
+.exam-option:active { transform: scale(0.99); }
+.exam-option.chosen { border-color: var(--accent); }
+.exam-option.right { background: var(--st-good-tint); border-color: var(--st-good); }
+.exam-option.wrong { background: var(--st-bad-tint); border-color: var(--st-bad); }
+.exam-letter { flex: none; width: 32px; height: 32px; border-radius: var(--r-lg); background: var(--surface); display: inline-flex; align-items: center; justify-content: center; font-weight: 600; font-size: var(--text-sm); }
+.exam-option.chosen .exam-letter { background: var(--accent); color: var(--accent-contrast); }
+.exam-nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 24px; }
+.exam-dots { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
+.exam-dot { width: 12px; height: 12px; border-radius: var(--r-full); border: 0; background: var(--surface-2); cursor: pointer; transition: background-color var(--t-color) var(--ease); }
+.exam-dot.done { background: var(--muted); }
+.exam-dot.current { background: var(--accent); }
+.exam-foot { display: flex; justify-content: space-between; gap: 16px; margin-top: 16px; font-size: var(--text-sm); }
+.exam-result { display: flex; gap: 40px; align-items: center; flex-wrap: wrap; }
+.exam-result > div:first-child { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.exam-score { font-size: 60px; line-height: 1; font-weight: 600; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.exam-review { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }

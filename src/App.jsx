@@ -4,9 +4,11 @@ import { ErrorBox } from './components.jsx'
 import { Icon } from './icons.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Documents from './pages/Documents.jsx'
+import Faq from './pages/Faq.jsx'
 import Offices from './pages/Offices.jsx'
 import Opr from './pages/Opr.jsx'
 import Sout from './pages/Sout.jsx'
+import Training from './pages/Training.jsx'
 import { applyTheme, getThemePref, saveThemePref, watchSystemTheme } from './theme.js'
 
 // Меню: группы → пункты. soon — раздел ещё не реализован (показывается заглушка).
@@ -26,9 +28,10 @@ const NAV = [
     { key: 'go', label: 'ГО ЧС', icon: 'siren', soon: true },
     { key: 'notifications', label: 'Уведомления', icon: 'bell', soon: true },
   ] },
-  { group: 'Справка', items: [
-    { key: 'modules', label: 'Модули', icon: 'gauge' },
+  { group: 'Обучение и справка', items: [
+    { key: 'training', label: 'Тренинг обучения', icon: 'graduation-cap' },
     { key: 'feedback', label: 'Вопросы и ответы', icon: 'question' },
+    { key: 'modules', label: 'Модули', icon: 'gauge' },
   ] },
 ]
 const PAGES = Object.fromEntries(NAV.flatMap(g => g.items.map(i => [i.key, i])))
@@ -45,16 +48,7 @@ const MODULES = [
   { icon: 'bell', name: 'Уведомления', note: 'Напоминания о сроках' },
   { icon: 'chat-circle', name: 'Обратная связь', note: 'Вопросы ответственным' },
   { icon: 'book-open', name: 'Инструкция', note: 'Как работать с порталом' },
-  { icon: 'barbell', name: 'Тренинг обучения', note: 'Практические занятия' },
-]
-
-const FAQ = [
-  ['Что такое СОУТ?', 'Специальная оценка условий труда: обязательная процедура измерения вредных и опасных факторов на рабочих местах. Плановая проводится не реже раза в 5 лет.'],
-  ['Что такое ОПР?', 'Оценка профессиональных рисков: выявление опасностей на рабочих местах, оценка уровня рисков и план мер по их снижению. Периодичность задаёт работодатель.'],
-  ['Что такое аналогичные рабочие места?', 'Места с одинаковыми условиями и оборудованием. Замеры проводят на 20 % таких мест, но не менее чем на двух, и результат распространяют на все.'],
-  ['Как обновить индекс соответствия офиса?', 'Заполните сводную таблицу «Чек-лист обязательных документов» и загрузите её в разделе «Документы». Индекс равен доле документов со статусом «Есть».'],
-  ['Почему офис подсвечен красным?', 'Индекс ниже 70 %, срок СОУТ истёк, пересмотр ОПР просрочен или есть другое критичное замечание. Подробности — в блоке «Сроки и нарушения» на дашборде.'],
-  ['Где посмотреть, каких документов не хватает?', 'На дашборде нажмите на ячейку тепловой карты: откроется чек-лист офиса по выбранному направлению.'],
+  { icon: 'barbell', name: 'Тренинг обучения', note: 'Тренажёр проверки знаний по ОТ' },
 ]
 
 const THEME_OPTIONS = { system: 'Как в системе', dark: 'Тёмная', light: 'Светлая' }
@@ -207,16 +201,9 @@ export default function App() {
           </div>
         )}
 
-        {page === 'feedback' && (
-          <section className="section">
-            <h2>Частые вопросы</h2>
-            <div className="faq">
-              {FAQ.map(([q, a]) => (
-                <article key={q} className="faq-item"><h3>{q}</h3><p>{a}</p></article>
-              ))}
-            </div>
-          </section>
-        )}
+        {page === 'feedback' && <Faq />}
+
+        {page === 'training' && <Training />}
 
         {current?.soon && (
           <section className="section empty-state">
