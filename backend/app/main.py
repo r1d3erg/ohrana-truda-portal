@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from . import config, registers, services
 from .models import RiskAssessment, SoutAssessment
 from .db import get_db, init_db
-from .parser import OFFICE_CODE_RE, STATUS_LABELS, ChecklistParseError
+from .parser import OFFICE_CODE_RE, normalize_office_code, STATUS_LABELS, ChecklistParseError
 
 ALLOWED_EXTENSIONS = (".xlsx", ".xlsm")
 
@@ -138,7 +138,7 @@ def list_offices(db: Session = Depends(get_db)):
 
 @api.post("/offices", tags=["offices"], status_code=201, summary="Создать офис вручную")
 def create_office(body: OfficeCreate, db: Session = Depends(get_db)):
-    code = body.code.strip()
+    code = normalize_office_code(body.code) or ""
     if not OFFICE_CODE_RE.match(code):
         raise HTTPException(status_code=422, detail={"message": "Недопустимый номер офиса", "errors": []})
     try:
@@ -148,30 +148,7 @@ def create_office(body: OfficeCreate, db: Session = Depends(get_db)):
     return services.office_to_dict(office, None)
 
 
-@api.patch("/offices/{code}", tags=["offices"], summary="Переименовать офис / назначить ответственного")
-def update_office(code: str, body: OfficeUpdate, db: Session = Depends(get_db)):
-    try:
-        office = services.update_office(db, code, body.name, body.responsible, body.model_fields_set)
-    except services.NotFound as exc:
-        _not_found(exc)
-    return services.office_to_dict(office, services.current_import(db, office))
-
-
-@api.get("/offices/{code}", tags=["offices"], summary="Карточка офиса: индекс и сводка по разделам")
-def get_office(code: str, db: Session = Depends(get_db)):
-    try:
-        office = services.get_office(db, code)
-    except services.NotFound as exc:
-        _not_found(exc)
-    imp = services.current_import(db, office)
-    return {
-        **services.office_to_dict(office, imp),
-        "current_import": services.import_to_dict(imp) if imp else None,
-        "by_category": services.category_summary(list(imp.items)) if imp else [],
-    }
-
-
-@api.get("/offices/{code}/checklist", tags=["offices"], summary="Документы офиса из актуальной загрузки")
+@api.get("/offices/{code:path}/checklist", tags=["offices"], summary="Документы офиса из актуальной загрузки")
 def get_office_checklist(
     code: str,
     status: str | None = Query(None, description="done / in_progress / missing / not_set"),
@@ -203,7 +180,7 @@ def get_office_checklist(
     }
 
 
-@api.get("/offices/{code}/imports", tags=["offices"], summary="История загрузок офиса")
+@api.get("/offices/{code:path}/imports", tags=["offices"], summary="История загрузок офиса")
 def get_office_imports(code: str, db: Session = Depends(get_db)):
     try:
         office = services.get_office(db, code)
@@ -301,7 +278,7 @@ def _register_routes(prefix: str, model, prepare, to_dict, summary_fn, state_fn,
     def list_summary(db: Session = Depends(get_db)):
         return summary_fn(db)
 
-    @api.get(f"/offices/{{code}}/{prefix}", tags=[prefix], operation_id=f"{prefix}_office", summary=f"{title}: история и состояние офиса")
+    @api.get(f"/offices/{{code:path}}/{prefix}", tags=[prefix], operation_id=f"{prefix}_office", summary=f"{title}: история и состояние офиса")
     def office_records(code: str, db: Session = Depends(get_db)):
         try:
             office = services.get_office(db, code)
@@ -312,7 +289,7 @@ def _register_routes(prefix: str, model, prepare, to_dict, summary_fn, state_fn,
         ordered = sorted(records, key=lambda r: r.id, reverse=True)
         return {**state, "records": [to_dict(r) for r in ordered]}
 
-    @api.post(f"/offices/{{code}}/{prefix}", tags=[prefix], operation_id=f"{prefix}_create", status_code=201, summary=f"{title}: добавить запись")
+    @api.post(f"/offices/{{code:path}}/{prefix}", tags=[prefix], operation_id=f"{prefix}_create", status_code=201, summary=f"{title}: добавить запись")
     def create_record(code: str, body: body_cls, db: Session = Depends(get_db)):  # type: ignore[valid-type]
         try:
             office = services.get_office(db, code)
@@ -356,6 +333,30 @@ _register_routes("sout", SoutAssessment, registers.prepare_sout, registers.sout_
                  registers.sout_summary, registers.sout_office_state, SoutIn, "СОУТ")
 _register_routes("opr", RiskAssessment, registers.prepare_opr, registers.opr_to_dict,
                  registers.opr_summary, registers.opr_office_state, OprIn, "ОПР")
+
+
+# Карточка офиса — последней: «{code:path}» иначе перехватит /offices/<код>/checklist и т.п.
+@api.patch("/offices/{code:path}", tags=["offices"], summary="Переименовать офис / назначить ответственного")
+def update_office(code: str, body: OfficeUpdate, db: Session = Depends(get_db)):
+    try:
+        office = services.update_office(db, code, body.name, body.responsible, body.model_fields_set)
+    except services.NotFound as exc:
+        _not_found(exc)
+    return services.office_to_dict(office, services.current_import(db, office))
+
+
+@api.get("/offices/{code:path}", tags=["offices"], summary="Карточка офиса: индекс и сводка по разделам")
+def get_office(code: str, db: Session = Depends(get_db)):
+    try:
+        office = services.get_office(db, code)
+    except services.NotFound as exc:
+        _not_found(exc)
+    imp = services.current_import(db, office)
+    return {
+        **services.office_to_dict(office, imp),
+        "current_import": services.import_to_dict(imp) if imp else None,
+        "by_category": services.category_summary(list(imp.items)) if imp else [],
+    }
 
 
 app.include_router(api)

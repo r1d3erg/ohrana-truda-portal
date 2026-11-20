@@ -62,9 +62,17 @@ def test_missing_office_code():
     assert "Номер офиса" in e.value.errors[0]
 
 
-def test_invalid_office_code():
-    with pytest.raises(ChecklistParseError):
-        parse_checklist(build_checklist(office="офис 1/2"))
+def test_office_code_accepts_any_text():
+    assert parse_checklist(build_checklist(office="RU 128")).office_code == "RU 128"
+    assert parse_checklist(build_checklist(office="  Офис №5 / Москва  ")).office_code == "Офис №5 / Москва"
+    # серии пробелов сжимаются — это тот же офис
+    assert parse_checklist(build_checklist(office="RU   128")).office_code == "RU 128"
+
+
+def test_too_long_office_code():
+    with pytest.raises(ChecklistParseError) as e:
+        parse_checklist(build_checklist(office="x" * 65))
+    assert "64" in e.value.errors[0]
 
 
 def test_numeric_office_code_kept_as_text():

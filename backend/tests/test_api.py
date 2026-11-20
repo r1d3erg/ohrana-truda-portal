@@ -187,3 +187,15 @@ def test_dashboard_delta_vs_previous_check(client):
         ["Есть", "Есть", "Есть", "Есть", "Есть", "В работе"])))
     m = client.get("/api/dashboard").json()["matrix"][0]
     assert m["readiness"] == 83.3 and m["prev_readiness"] == 50.0 and m["delta"] == 33.3
+
+
+def test_office_code_with_spaces_and_slash(client):
+    r = upload(client, build_checklist(office="RU 128 / Москва"))
+    assert r.status_code == 200, r.text
+    from urllib.parse import quote
+    code = quote("RU 128 / Москва", safe="")
+    assert client.get(f"/api/offices/{code}").json()["code"] == "RU 128 / Москва"
+    assert client.get(f"/api/offices/{code}/checklist").status_code == 200
+    assert client.get(f"/api/offices/{code}/imports").status_code == 200
+    assert client.get(f"/api/offices/{code}/sout").status_code == 200
+    assert client.patch(f"/api/offices/{code}", json={"responsible": "Иванов"}).json()["responsible"] == "Иванов"

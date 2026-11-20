@@ -54,7 +54,19 @@ _META_LABELS = {
     "статус мсп": "msp_status",
 }
 
-OFFICE_CODE_RE = re.compile(r"^[\w.\-]{1,64}$", re.UNICODE)
+# Номер офиса — любой текст до 64 символов (пробелы, кириллица, «/», «№» и т.п.),
+# без управляющих символов. Пробелы по краям убираются, серии пробелов внутри
+# сжимаются в один, чтобы «RU  128» и «RU 128» считались одним офисом.
+OFFICE_CODE_RE = re.compile(r"^[^\x00-\x1f\x7f]{1,64}$")
+
+
+def normalize_office_code(value) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, float) and value.is_integer():
+        value = int(value)
+    s = re.sub(r"\s+", " ", str(value)).strip()
+    return s or None
 _GROUP_RE = re.compile(r"^\d+\.\s*\S")
 _DATE_FORMATS = ("%d.%m.%Y", "%d.%m.%y", "%Y-%m-%d", "%d/%m/%Y")
 
@@ -324,11 +336,11 @@ def parse_checklist(data: bytes) -> ParsedChecklist:
         ])
 
     # --- Шапка ---------------------------------------------------------------
-    office_code = _text(meta.get("office_code"))
+    office_code = normalize_office_code(meta.get("office_code"))
     if not office_code:
         errors.insert(0, "В шапке не заполнен «Номер офиса»")
     elif not OFFICE_CODE_RE.match(office_code):
-        errors.insert(0, f"Недопустимый номер офиса «{office_code}» (буквы, цифры, точка, дефис, подчёркивание; до 64 символов)")
+        errors.insert(0, f"Недопустимый номер офиса «{office_code}» (не длиннее 64 символов, без служебных символов)")
 
     if not items and not errors:
         errors.append("В таблице не найдено ни одной позиции")
