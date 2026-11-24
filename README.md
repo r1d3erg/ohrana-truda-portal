@@ -9,6 +9,8 @@
 
 📄 **СОУТ и ОПР — ручной ввод, сроки и предупреждения:** [docs/sout-opr.md](docs/sout-opr.md)
 
+📄 **Пожарная безопасность, электробезопасность, ГО и ЧС — ручной ввод:** [docs/directions.md](docs/directions.md)
+
 🛠 **Для разработчиков — как устроен проект и как подключить свой отчёт:**
 [docs/developer-guide.md](docs/developer-guide.md)
 

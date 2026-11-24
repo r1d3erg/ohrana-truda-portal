@@ -3,6 +3,7 @@ import { api, setThresholds } from './api.js'
 import { ErrorBox } from './components.jsx'
 import { Icon } from './icons.jsx'
 import Dashboard from './pages/Dashboard.jsx'
+import Direction from './pages/Direction.jsx'
 import Documents from './pages/Documents.jsx'
 import Faq from './pages/Faq.jsx'
 import Guide from './pages/Guide.jsx'
@@ -23,10 +24,10 @@ const NAV = [
     { key: 'sout', label: 'СОУТ', icon: 'clipboard-text' },
     { key: 'opr', label: 'ОПР', icon: 'warning' },
   ] },
-  { group: 'Направления · в разработке', items: [
-    { key: 'fire', label: 'Пожарная безопасность', icon: 'fire', soon: true, guide: 'fire-electro' },
-    { key: 'electro', label: 'Электробезопасность', icon: 'lightning', soon: true, guide: 'fire-electro' },
-    { key: 'go', label: 'ГО ЧС', icon: 'siren', soon: true, guide: 'go' },
+  { group: 'Направления', items: [
+    { key: 'fire', label: 'Пожарная безопасность', icon: 'fire' },
+    { key: 'electro', label: 'Электробезопасность', icon: 'lightning' },
+    { key: 'go', label: 'ГО ЧС', icon: 'siren' },
     { key: 'notifications', label: 'Уведомления', icon: 'bell', soon: true },
   ] },
   { group: 'Обучение и справка', items: [
@@ -41,9 +42,9 @@ const PAGES = Object.fromEntries(NAV.flatMap(g => g.items.map(i => [i.key, i])))
 // Модули: open — куда ведёт карточка (страница портала и, для «Инструкции», раздел)
 const MODULES = [
   { icon: 'hard-hat', name: 'Охрана труда', note: 'Документы СУОТ, инструкции, инструктажи', open: { page: 'guide', section: 'start' } },
-  { icon: 'siren', name: 'ГО ЧС', note: 'Планы и приказы по ГО и ЧС', open: { page: 'guide', section: 'go' } },
-  { icon: 'fire', name: 'Пожарная безопасность', note: 'Противопожарный режим, эвакуация', open: { page: 'guide', section: 'fire-electro' } },
-  { icon: 'lightning', name: 'Электробезопасность', note: 'Группы допуска, журналы', open: { page: 'guide', section: 'fire-electro' } },
+  { icon: 'siren', name: 'ГО ЧС', note: 'Уполномоченный, инструктажи, учения', open: { page: 'go' } },
+  { icon: 'fire', name: 'Пожарная безопасность', note: 'Огнетушители, инструктажи, эвакуация', open: { page: 'fire' } },
+  { icon: 'lightning', name: 'Электробезопасность', note: 'I группа, электрохозяйство, обходы', open: { page: 'electro' } },
   { icon: 'files', name: 'Документы и журналы', note: 'Сводная таблица и индекс соответствия', open: { page: 'documents' } },
   { icon: 'graduation-cap', name: 'Обучение', note: 'Обучение и проверка знаний', open: { page: 'guide', section: 'internal' } },
   { icon: 'clipboard-text', name: 'СОУТ', note: 'Сроки, классы, декларация', open: { page: 'sout' } },
@@ -216,6 +217,11 @@ export default function App() {
         )}
 
         {page === 'guide' && <Guide sectionId={guideSection} onSectionChange={setGuideSection} />}
+
+        {['fire', 'electro', 'go'].includes(page) && (
+          <Direction kind={page} focusCode={registerFocus?.code} key={`${page}-${registerFocus?.nonce || 0}`}
+                     onChanged={reload} onOpenGuide={(id) => { setGuideSection(id); setPage('guide') }} />
+        )}
 
         {page === 'feedback' && <Faq />}
 

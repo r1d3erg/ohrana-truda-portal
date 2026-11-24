@@ -1,6 +1,6 @@
 // Общие компоненты страниц «СОУТ» и «ОПР»: модальная форма, поля, предупреждения.
 import { useEffect } from 'react'
-import { fmtDate } from './api.js'
+import { REGISTER_LABEL, fmtDate } from './api.js'
 import { Icon } from './icons.jsx'
 
 export function Modal({ title, onClose, children, footer }) {
@@ -142,7 +142,7 @@ export function AlertList({ alerts, onOffice, showOffice }) {
             style={onOffice ? { cursor: 'pointer' } : undefined}>
           <span className="al-icon">{a.severity === 'bad' ? '✕' : '!'}</span>
           <span className="al-text">
-            {showOffice && <strong>{a.office_code}{a.kind ? ` · ${a.kind === 'sout' ? 'СОУТ' : 'ОПР'}` : ''}: </strong>}
+            {showOffice && <strong>{a.office_code}{a.kind ? ` · ${REGISTER_LABEL[a.kind] || a.kind}` : ''}: </strong>}
             {a.text}
           </span>
           {a.due && <span className="al-due">{fmtDate(a.due)}</span>}

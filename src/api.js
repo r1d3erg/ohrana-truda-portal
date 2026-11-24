@@ -52,6 +52,11 @@ export const api = {
   createRegister: (kind, code, body) => request(`/offices/${encodeURIComponent(code)}/${kind}`, json('POST', body)),
   updateRegister: (kind, id, body) => request(`/${kind}/${id}`, json('PUT', body)),
   deleteRegister: (kind, id) => request(`/${kind}/${id}`, { method: 'DELETE' }),
+  // Пожарная безопасность, электробезопасность, ГО и ЧС (kind = 'fire' | 'electro' | 'go')
+  directionSpec: (kind) => request(`/directions/${kind}/spec`),
+  directionSummary: (kind) => request(`/directions/${kind}`),
+  officeDirection: (kind, code) => request(`/offices/${encodeURIComponent(code)}/directions/${kind}`),
+  saveDirection: (kind, code, body) => request(`/offices/${encodeURIComponent(code)}/directions/${kind}`, json('PUT', body)),
   uploadChecklist: (file, { dryRun = false } = {}) => {
     const form = new FormData()
     form.append('file', file)
@@ -93,3 +98,6 @@ export const fmtDaysLeft = (n) => {
   if (n === 0) return 'сегодня'
   return `через ${n} ${daysWord(n)}`
 }
+
+// Короткие подписи реестров для списков предупреждений
+export const REGISTER_LABEL = { sout: 'СОУТ', opr: 'ОПР', fire: 'ПБ', electro: 'ЭБ', go: 'ГО ЧС' }

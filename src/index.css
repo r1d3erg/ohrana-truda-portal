@@ -537,3 +537,8 @@ td.hm-office:hover .hm-office-code { text-decoration: underline; text-underline-
   .guide { grid-template-columns: 1fr; }
   .guide-toc { position: static; max-height: none; }
 }
+
+/* Карточка направления: «поле — значение» */
+.kv-list { display: flex; flex-direction: column; }
+.kv-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: var(--text-sm); line-height: var(--lh-sm); }
+.kv-row:last-child { border-bottom: 0; }

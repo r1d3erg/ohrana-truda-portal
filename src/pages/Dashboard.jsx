@@ -152,6 +152,9 @@ function Kpis({ data, onOpenOffices }) {
 // ---------------------------------------------------------------------------
 // Тепловая карта «офис × направление»
 // ---------------------------------------------------------------------------
+// Направления с ручным вводом (ПБ, ЭБ, ГО ЧС) — backend/app/directions.py
+const DIRS = ['fire', 'electro', 'go']
+
 function Heatmap({ data, onDrill, bind, onOpenRegister }) {
   const reg = data.registers
   const [sortKey, setSortKey] = useState('readiness')
@@ -204,6 +207,7 @@ function Heatmap({ data, onDrill, bind, onOpenRegister }) {
               <th className="hm-total">Индекс</th>
               <th className="hm-reg">СОУТ</th>
               <th className="hm-reg">ОПР</th>
+              {DIRS.map(k => <th key={k} className="hm-reg">{reg?.directions?.[k]?.short || k}</th>)}
               {cats.map(c => {
                 const info = catInfo[c]
                 return (
@@ -223,7 +227,7 @@ function Heatmap({ data, onDrill, bind, onOpenRegister }) {
           </thead>
           <tbody>
             {rows.length === 0 && (
-              <tr><td colSpan={cats.length + 4} className="muted">Нет офисов, подходящих под фильтр</td></tr>
+              <tr><td colSpan={cats.length + 4 + DIRS.length} className="muted">Нет офисов, подходящих под фильтр</td></tr>
             )}
             {rows.map(m => (
               <tr key={m.code}>
@@ -240,6 +244,12 @@ function Heatmap({ data, onDrill, bind, onOpenRegister }) {
                          onClick={() => onOpenRegister('sout', m.code)} bind={bind} title={`${m.code} · СОУТ`} />
                 <RegCell info={reg?.opr?.by_office?.[m.code]} date={reg?.opr?.by_office?.[m.code]?.next_review_date}
                          onClick={() => onOpenRegister('opr', m.code)} bind={bind} title={`${m.code} · ОПР`} />
+                {DIRS.map(k => {
+                  const info = reg?.directions?.[k]?.by_office?.[m.code]
+                  return <RegCell key={k} info={info} date={info?.next_due}
+                                  onClick={() => onOpenRegister(k, m.code)} bind={bind}
+                                  title={`${m.code} · ${reg?.directions?.[k]?.title || k}`} />
+                })}
                 {cats.map(c => {
                   const cell = m.cells[c]
                   if (!cell) return <td key={c} className="hm-cell hm-none">—</td>
@@ -302,7 +312,7 @@ function RegistersBlock({ reg, onOpenRegister }) {
   return (
     <div className="two-col">
       <div className="section">
-        <div className="section-head"><h2>СОУТ и ОПР по офисам</h2></div>
+        <div className="section-head"><h2>Оценки и направления по офисам</h2></div>
         <div className="reg-kpi" onClick={() => onOpenRegister('sout')}>
           <div className="reg-kpi-title">СОУТ</div>
           <Item v={s.ok + s.declared} label="действует" cls="lvl-good" />
@@ -319,6 +329,21 @@ function RegistersBlock({ reg, onOpenRegister }) {
           <Item v={o.none + o.planned} label="нет данных" cls="lvl-new" />
           <Item v={reg.opr.high_risks} label="высоких рисков" cls={reg.opr.high_risks ? 'lvl-bad' : 'lvl-new'} />
         </div>
+        {DIRS.map(k => {
+          const d = reg.directions?.[k]
+          if (!d) return null
+          const c = d.counts
+          return (
+            <div key={k} className="reg-kpi" onClick={() => onOpenRegister(k)}>
+              <div className="reg-kpi-title">{d.short}</div>
+              <Item v={c.ok} label="в норме" cls="lvl-good" />
+              <Item v={c.soon} label="скоро срок" cls="lvl-warn" />
+              <Item v={c.attention} label="внимание" cls="lvl-warn" />
+              <Item v={c.overdue} label="просрочено" cls="lvl-bad" />
+              <Item v={c.none} label="нет данных" cls="lvl-new" />
+            </div>
+          )
+        })}
       </div>
       <div className="section">
         <div className="section-head">
