@@ -415,6 +415,15 @@ td.hm-office:hover .hm-office-code { text-decoration: underline; text-underline-
 }
 .login-box p { color: var(--muted); }
 .login-box .btn { width: 100%; margin-top: 8px; }
+.login-box .upload-row .btn { width: auto; flex: 1; }
+.login-box .login-hint { font-size: var(--text-xs); line-height: var(--lh-xs); }
+.user-menu { display: inline-flex; align-items: center; gap: 8px; }
+.user-menu .who { display: flex; flex-direction: column; line-height: 1.2; text-align: right; }
+.user-menu .who strong { font-size: var(--text-sm); }
+.user-menu .who span { font-size: var(--text-xs); color: var(--muted); }
+.icon-btn { border: 0; background: var(--surface-2); color: var(--text); width: 32px; height: 32px; border-radius: var(--r-md); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.icon-btn:hover { background: var(--surface); }
+.icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* --- Модули и FAQ ------------------------------------------------------------ */
 .modules-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(192px, 1fr)); gap: 12px; }

@@ -266,7 +266,7 @@ export default function Documents({ offices, role, selectedCode, onSelect, onCha
   const changed = () => { setReloadKey(k => k + 1); onChanged() }
   return (
     <>
-      <UploadSection onUploaded={(code) => { onSelect(code); changed() }} />
+      {role !== 'viewer' && <UploadSection onUploaded={(code) => { onSelect(code); changed() }} />}
       <OfficeChecklist offices={offices} code={selectedCode} onSelect={onSelect} role={role}
                        reloadKey={reloadKey} onChanged={changed} focus={focus} />
     </>

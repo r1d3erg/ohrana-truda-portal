@@ -125,7 +125,7 @@ function OprForm({ cfg, office, record, onClose, onSaved }) {
   )
 }
 
-function OfficeDetail({ code, role, reloadKey, onEdit, onAdd, onChanged }) {
+function OfficeDetail({ canEdit = () => true, code, role, reloadKey, onEdit, onAdd, onChanged }) {
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
   useEffect(() => {
@@ -144,7 +144,7 @@ function OfficeDetail({ code, role, reloadKey, onEdit, onAdd, onChanged }) {
     <div className="section">
       <div className="section-head">
         <h2>Офис {code}: оценка профессиональных рисков</h2>
-        <button className="btn" onClick={onAdd}>+ Добавить оценку</button>
+        {canEdit(code) && <button className="btn" onClick={onAdd}>+ Добавить оценку</button>}
       </div>
       <h3 className="mt-0">Замечания и сроки</h3>
       <AlertList alerts={data.alerts} />
@@ -178,7 +178,7 @@ function OfficeDetail({ code, role, reloadKey, onEdit, onAdd, onChanged }) {
                 <td><RiskBar r={r} /></td>
                 <td><Measures planned={r.measures_planned} done={r.measures_done} /></td>
                 <td className="actions">
-                  <button className="btn-small" onClick={() => onEdit(r)}>Изменить</button>
+                  {canEdit(code) && <button className="btn-small" onClick={() => onEdit(r)}>Изменить</button>}
                   {role === 'super' && <ConfirmButton confirmLabel="Удалить запись" onConfirm={() => remove(r)} />}
                 </td>
               </tr>
@@ -190,7 +190,7 @@ function OfficeDetail({ code, role, reloadKey, onEdit, onAdd, onChanged }) {
   )
 }
 
-export default function Opr({ cfg, role, focusCode, onChanged }) {
+export default function Opr({ cfg, role, canEdit = () => true, focusCode, onChanged }) {
   const [summary, setSummary] = useState(null)
   const [error, setError] = useState(null)
   const [filter, setFilter] = useState(null)
@@ -241,7 +241,7 @@ export default function Opr({ cfg, role, focusCode, onChanged }) {
                     <td><Measures planned={c?.measures_planned} done={c?.measures_done} /></td>
                     <td>{s.alerts.length ? <span className={bad ? 'lvl-bad' : 'lvl-warn'}>{bad ? '✕' : '!'} {s.alerts.length}</span> : <span className="lvl-good">✓</span>}</td>
                     <td className="actions" onClick={e => e.stopPropagation()}>
-                      <button className="btn-small" onClick={() => setModal({ code: s.office_code })}>+ ОПР</button>
+                      {canEdit(s.office_code) && <button className="btn-small" onClick={() => setModal({ code: s.office_code })}>+ ОПР</button>}
                     </td>
                   </tr>
                 )
@@ -252,7 +252,7 @@ export default function Opr({ cfg, role, focusCode, onChanged }) {
       </div>
       {selected && (
         <OfficeDetail code={selected} role={role} reloadKey={reloadKey} onChanged={changed}
-                      onAdd={() => setModal({ code: selected })}
+                      canEdit={canEdit} onAdd={() => setModal({ code: selected })}
                       onEdit={(r) => setModal({ code: selected, record: r })} />
       )}
       {modal && <OprForm cfg={cfg} office={modal.code} record={modal.record}

@@ -9,10 +9,21 @@ export class ApiError extends Error {
   }
 }
 
+// Заголовок защиты от CSRF: бэкенд принимает изменяющие запросы только с ним (docs/auth.md)
+const CSRF = { 'X-Requested-With': 'ot-portal' }
+
+// Подписка на «сессия истекла» (401) — App показывает экран входа
+let onUnauthorized = () => {}
+export const setUnauthorizedHandler = (fn) => { onUnauthorized = fn }
+
 async function request(path, options = {}) {
   let res
   try {
-    res = await fetch(`/api${path}`, options)
+    res = await fetch(`/api${path}`, {
+      credentials: 'same-origin',
+      ...options,
+      headers: { ...CSRF, ...(options.headers || {}) },
+    })
   } catch {
     throw new ApiError(0, 'Бэкенд недоступен — проверьте, что сервер запущен')
   }
@@ -22,6 +33,7 @@ async function request(path, options = {}) {
   if (!res.ok) {
     const detail = data?.detail
     const message = typeof detail === 'string' ? detail : detail?.message || `Ошибка сервера (${res.status})`
+    if (res.status === 401 && !path.startsWith('/auth/')) onUnauthorized()
     throw new ApiError(res.status, message, Array.isArray(detail?.errors) ? detail.errors : [])
   }
   return data
@@ -34,6 +46,15 @@ const json = (method, body) => ({
 })
 
 export const api = {
+  // Вход и пользователи
+  me: () => request('/auth/me'),
+  login: (login, password) => request('/auth/login', json('POST', { login, password })),
+  logout: () => request('/auth/logout', { method: 'POST' }),
+  changePassword: (current_password, new_password) => request('/auth/password', json('POST', { current_password, new_password })),
+  roles: () => request('/roles'),
+  users: () => request('/users'),
+  createUser: (body) => request('/users', json('POST', body)),
+  updateUser: (id, body) => request(`/users/${id}`, json('PATCH', body)),
   config: () => request('/config'),
   dashboard: () => request('/dashboard'),
   offices: () => request('/offices'),

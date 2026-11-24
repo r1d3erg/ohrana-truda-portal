@@ -86,7 +86,7 @@ function fmtValue(f, v) {
   return String(v)
 }
 
-function OfficeCard({ spec, code, reloadKey, onEdit, onOpenGuide }) {
+function OfficeCard({ spec, code, reloadKey, onEdit, onOpenGuide, editable }) {
   const [st, setSt] = useState(null)
   const [error, setError] = useState(null)
   useEffect(() => {
@@ -105,7 +105,7 @@ function OfficeCard({ spec, code, reloadKey, onEdit, onOpenGuide }) {
         </div>
         <div className="upload-row">
           <button className="btn btn-secondary" onClick={onOpenGuide}><Icon name="book-open" size={20} /> Что делать</button>
-          <button className="btn" onClick={onEdit}><Icon name="pencil-simple" size={20} /> {st.data ? 'Изменить' : 'Заполнить'}</button>
+          {editable && <button className="btn" onClick={onEdit}><Icon name="pencil-simple" size={20} /> {st.data ? 'Изменить' : 'Заполнить'}</button>}
         </div>
       </div>
       <div className="two-col">
@@ -148,7 +148,7 @@ function OfficeCard({ spec, code, reloadKey, onEdit, onOpenGuide }) {
   )
 }
 
-export default function Direction({ kind, focusCode, onChanged, onOpenGuide }) {
+export default function Direction({ kind, focusCode, onChanged, onOpenGuide, canEdit = () => true }) {
   const [spec, setSpec] = useState(null)
   const [summary, setSummary] = useState(null)
   const [error, setError] = useState(null)
@@ -183,7 +183,7 @@ export default function Direction({ kind, focusCode, onChanged, onOpenGuide }) {
         <div className="section-head">
           <div>
             <h2>{spec.title} по офисам</h2>
-            <p className="muted">Данные вносит ответственный офиса вручную. Портал считает сроки и подсвечивает просрочки; всё это попадает в дашборд. Нажмите на офис, чтобы увидеть детали.</p>
+            <p className="muted">Данные вносит ответственный офиса вручную (свои офисы) или служба охраны труда. Портал считает сроки и подсвечивает просрочки; всё это попадает в дашборд. Нажмите на офис, чтобы увидеть детали.</p>
           </div>
           <button className="btn btn-secondary" onClick={() => onOpenGuide(spec.guide)}><Icon name="book-open" size={20} /> Что делать по инструкции</button>
         </div>
@@ -205,7 +205,7 @@ export default function Direction({ kind, focusCode, onChanged, onOpenGuide }) {
                     <td>{s.alerts.length ? <span className={bad ? 'lvl-bad' : 'lvl-warn'}>{bad ? '✕' : '!'} {s.alerts.length}</span> : <span className="lvl-good">✓</span>}</td>
                     <td className="muted">{s.updated_at ? fmtDate(s.updated_at.slice(0, 10)) : '—'}</td>
                     <td className="actions" onClick={e => e.stopPropagation()}>
-                      <button className="btn-small" onClick={() => setModal({ code: s.office_code, data: s.data })}>{s.data ? 'Изменить' : 'Заполнить'}</button>
+                      {canEdit(s.office_code) && <button className="btn-small" onClick={() => setModal({ code: s.office_code, data: s.data })}>{s.data ? 'Изменить' : 'Заполнить'}</button>}
                     </td>
                   </tr>
                 )
@@ -216,7 +216,7 @@ export default function Direction({ kind, focusCode, onChanged, onOpenGuide }) {
       </div>
 
       {selected && (
-        <OfficeCard spec={spec} code={selected} reloadKey={reloadKey}
+        <OfficeCard spec={spec} code={selected} reloadKey={reloadKey} editable={canEdit(selected)}
                     onEdit={() => setModal({ code: selected, data: summary.find(s => s.office_code === selected)?.data })}
                     onOpenGuide={() => onOpenGuide(spec.guide)} />
       )}

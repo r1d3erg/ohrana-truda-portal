@@ -164,7 +164,7 @@ function SoutForm({ cfg, office, record, onClose, onSaved }) {
 // ---------------------------------------------------------------------------
 // Карточка офиса
 // ---------------------------------------------------------------------------
-function OfficeDetail({ code, cfg, role, reloadKey, onEdit, onAdd, onChanged }) {
+function OfficeDetail({ canEdit = () => true, code, cfg, role, reloadKey, onEdit, onAdd, onChanged }) {
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
   useEffect(() => {
@@ -183,7 +183,7 @@ function OfficeDetail({ code, cfg, role, reloadKey, onEdit, onAdd, onChanged }) 
     <div className="section">
       <div className="section-head">
         <h2>Офис {code}: СОУТ</h2>
-        <button className="btn" onClick={onAdd}>+ Добавить СОУТ</button>
+        {canEdit(code) && <button className="btn" onClick={onAdd}>+ Добавить СОУТ</button>}
       </div>
       <h3 className="mt-0">Замечания и сроки</h3>
       <AlertList alerts={data.alerts} />
@@ -221,7 +221,7 @@ function OfficeDetail({ code, cfg, role, reloadKey, onEdit, onAdd, onChanged }) 
                 <td>{r.workplaces_assessed ?? '—'} / {r.workplaces_total ?? '—'}</td>
                 <td><ClassBar classes={r.classes} /></td>
                 <td className="actions">
-                  <button className="btn-small" onClick={() => onEdit(r)}>Изменить</button>
+                  {canEdit(code) && <button className="btn-small" onClick={() => onEdit(r)}>Изменить</button>}
                   {role === 'super' && <ConfirmButton confirmLabel="Удалить запись" onConfirm={() => remove(r)} />}
                 </td>
               </tr>
@@ -234,7 +234,7 @@ function OfficeDetail({ code, cfg, role, reloadKey, onEdit, onAdd, onChanged }) 
 }
 
 // ---------------------------------------------------------------------------
-export default function Sout({ cfg, role, focusCode, onChanged }) {
+export default function Sout({ cfg, role, canEdit = () => true, focusCode, onChanged }) {
   const [summary, setSummary] = useState(null)
   const [error, setError] = useState(null)
   const [filter, setFilter] = useState(null)
@@ -288,7 +288,7 @@ export default function Sout({ cfg, role, focusCode, onChanged }) {
                     <td><ClassBar classes={c?.classes} /></td>
                     <td>{s.alerts.length ? <span className={bad ? 'lvl-bad' : 'lvl-warn'}>{bad ? '✕' : '!'} {s.alerts.length}</span> : <span className="lvl-good">✓</span>}</td>
                     <td className="actions" onClick={e => e.stopPropagation()}>
-                      <button className="btn-small" onClick={() => setModal({ code: s.office_code })}>+ СОУТ</button>
+                      {canEdit(s.office_code) && <button className="btn-small" onClick={() => setModal({ code: s.office_code })}>+ СОУТ</button>}
                     </td>
                   </tr>
                 )
@@ -300,7 +300,7 @@ export default function Sout({ cfg, role, focusCode, onChanged }) {
 
       {selected && (
         <OfficeDetail code={selected} cfg={cfg} role={role} reloadKey={reloadKey} onChanged={changed}
-                      onAdd={() => setModal({ code: selected })}
+                      canEdit={canEdit} onAdd={() => setModal({ code: selected })}
                       onEdit={(r) => setModal({ code: selected, record: r })} />
       )}
 

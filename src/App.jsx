@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
-import { api, setThresholds } from './api.js'
+import { api, setThresholds, setUnauthorizedHandler } from './api.js'
 import { ErrorBox } from './components.jsx'
 import { Icon } from './icons.jsx'
+import { ChangePasswordForm, LoginScreen } from './pages/Auth.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Direction from './pages/Direction.jsx'
 import Documents from './pages/Documents.jsx'
@@ -11,6 +12,7 @@ import Offices from './pages/Offices.jsx'
 import Opr from './pages/Opr.jsx'
 import Sout from './pages/Sout.jsx'
 import Training from './pages/Training.jsx'
+import Users from './pages/Users.jsx'
 import { applyTheme, getThemePref, saveThemePref, watchSystemTheme } from './theme.js'
 
 // Меню: группы → пункты. soon — раздел ещё не реализован (показывается заглушка).
@@ -36,6 +38,9 @@ const NAV = [
     { key: 'guide', label: 'Инструкция', icon: 'book-open' },
     { key: 'modules', label: 'Модули', icon: 'gauge' },
   ] },
+  { group: 'Администрирование', admin: true, items: [
+    { key: 'users', label: 'Пользователи и роли', icon: 'user' },
+  ] },
 ]
 const PAGES = Object.fromEntries(NAV.flatMap(g => g.items.map(i => [i.key, i])))
 
@@ -58,8 +63,13 @@ const MODULES = [
 const THEME_OPTIONS = { system: 'Как в системе', dark: 'Тёмная', light: 'Светлая' }
 
 export default function App() {
-  const [loggedIn, setLoggedIn] = useState(false)
-  const [role, setRole] = useState('super')
+  // user: undefined — проверяем сессию, null — не вошёл, объект — текущий пользователь (/api/auth/me)
+  const [user, setUser] = useState(undefined)
+  const [changingPassword, setChangingPassword] = useState(false)
+  const loggedIn = !!user && !user.must_change_password
+  // Роль для страниц: super — служба ОТ, office — ответственный офиса, viewer — руководитель (просмотр)
+  const role = user?.role === 'admin' ? 'super' : user?.role === 'responsible' ? 'office' : 'viewer'
+  const canEdit = useCallback((code) => user?.role === 'admin' || (user?.role === 'responsible' && user.offices.includes(code)), [user])
   const [page, setPage] = useState('dashboard')
   const [offices, setOffices] = useState([])
   const [dashboard, setDashboard] = useState(null)
@@ -90,21 +100,36 @@ export default function App() {
     }
   }, [])
 
+  // Проверка сессии при открытии; при 401 в любом запросе — обратно на экран входа
+  useEffect(() => {
+    setUnauthorizedHandler(() => setUser(null))
+    api.me().then(setUser).catch(() => setUser(null))
+  }, [])
+
+  const logout = async () => {
+    try { await api.logout() } catch { /* сессия уже закрыта */ }
+    setUser(null)
+    setPage('dashboard')
+    setOffices([])
+    setDashboard(null)
+  }
+
   useEffect(() => {
     if (!loggedIn) return
     api.config().then(c => { setThresholds(c); setCfg(c) }).catch(() => {})
     reload()
   }, [loggedIn, reload])
 
-  if (!loggedIn) {
+  if (user === undefined) {
+    return <main className="login-screen"><p className="muted">Загрузка…</p></main>
+  }
+  if (!user) return <LoginScreen onLogin={setUser} />
+  if (user.must_change_password || changingPassword) {
     return (
       <main className="login-screen">
-        <div className="login-box">
-          <span className="login-icon"><Icon name="hard-hat" size={24} /></span>
-          <h1>Охрана труда</h1>
-          <p>Документы, СОУТ и оценка рисков по всем офисам в одном месте. Вход через учётную запись Active Directory.</p>
-          <button className="btn" onClick={() => setLoggedIn(true)}><Icon name="sign-in" size={20} /> Войти через AD</button>
-        </div>
+        <ChangePasswordForm user={user} forced={user.must_change_password}
+                            onDone={(u) => { setUser(u); setChangingPassword(false) }}
+                            onCancel={() => setChangingPassword(false)} onLogout={logout} />
       </main>
     )
   }
@@ -134,7 +159,7 @@ export default function App() {
       <aside className="sidebar">
         <div className="logo"><Icon name="hard-hat" size={24} /> Охрана <span>труда</span></div>
         <nav aria-label="Разделы портала">
-          {NAV.map(g => (
+          {NAV.filter(g => !g.admin || user.role === 'admin').map(g => (
             <div key={g.group || 'main'}>
               {g.group && <div className="nav-group">{g.group}</div>}
               {g.items.map(i => (
@@ -154,16 +179,20 @@ export default function App() {
         <header className="header">
           <h1>{current?.label}</h1>
           <div className="header-tools">
-            <div className="role-switch" role="group" aria-label="Роль">
-              <button className={`role-btn ${role === 'super' ? 'active' : ''}`} onClick={() => setRole('super')}>Супер-админ</button>
-              <button className={`role-btn ${role === 'office' ? 'active' : ''}`} onClick={() => setRole('office')}>Ответственный офиса</button>
-            </div>
             <label className="user-badge">
               Тема
               <select className="input" value={themePref} onChange={e => setThemePref(e.target.value)}>
                 {Object.entries(THEME_OPTIONS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </label>
+            <div className="user-menu">
+              <div className="who">
+                <strong>{user.full_name || user.login}</strong>
+                <span>{user.role_label}{user.role === 'responsible' ? ` · ${user.offices.length ? user.offices.join(', ') : 'офисы не назначены'}` : ''}</span>
+              </div>
+              <button className="icon-btn" title="Сменить пароль" aria-label="Сменить пароль" onClick={() => setChangingPassword(true)}><Icon name="lock" size={16} /></button>
+              <button className="icon-btn" title="Выйти" aria-label="Выйти" onClick={logout}><Icon name="sign-out" size={16} /></button>
+            </div>
           </div>
         </header>
 
@@ -185,11 +214,11 @@ export default function App() {
         )}
 
         {page === 'sout' && (
-          <Sout cfg={cfg} role={role} focusCode={registerFocus?.code} key={`sout-${registerFocus?.nonce || 0}`} onChanged={reload} />
+          <Sout cfg={cfg} role={role} canEdit={canEdit} focusCode={registerFocus?.code} key={`sout-${registerFocus?.nonce || 0}`} onChanged={reload} />
         )}
 
         {page === 'opr' && (
-          <Opr cfg={cfg} role={role} focusCode={registerFocus?.code} key={`opr-${registerFocus?.nonce || 0}`} onChanged={reload} />
+          <Opr cfg={cfg} role={role} canEdit={canEdit} focusCode={registerFocus?.code} key={`opr-${registerFocus?.nonce || 0}`} onChanged={reload} />
         )}
 
         {page === 'modules' && (
@@ -222,10 +251,12 @@ export default function App() {
           </div>
         )}
 
+        {page === 'users' && user.role === 'admin' && <Users offices={offices} currentUserId={user.id} />}
+
         {page === 'guide' && <Guide sectionId={guideSection} onSectionChange={setGuideSection} />}
 
         {['fire', 'electro', 'go'].includes(page) && (
-          <Direction kind={page} focusCode={registerFocus?.code} key={`${page}-${registerFocus?.nonce || 0}`}
+          <Direction kind={page} canEdit={canEdit} focusCode={registerFocus?.code} key={`${page}-${registerFocus?.nonce || 0}`}
                      onChanged={reload} onOpenGuide={(id) => { setGuideSection(id); setPage('guide') }} />
         )}
 

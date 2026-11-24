@@ -163,7 +163,10 @@ def test_password_reset_by_admin_forces_change(client):
 
 def test_password_hash_not_exposed(client):
     users = client.get("/api/users").json()
-    assert users and all("password" not in k for u in users for k in u)
+    assert users
+    for u in users:
+        assert "password_hash" not in u and "password" not in u
+        assert not any("scrypt$" in str(v) for v in u.values())
 
 
 def test_bootstrap_admin(monkeypatch):
