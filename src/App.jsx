@@ -41,16 +41,16 @@ const PAGES = Object.fromEntries(NAV.flatMap(g => g.items.map(i => [i.key, i])))
 
 // Модули: open — куда ведёт карточка (страница портала и, для «Инструкции», раздел)
 const MODULES = [
-  { icon: 'hard-hat', name: 'Охрана труда', note: 'Документы СУОТ, инструкции, инструктажи', open: { page: 'guide', section: 'start' } },
+  { icon: 'hard-hat', name: 'Охрана труда', note: 'Документы СУОТ, инструкции, инструктажи', open: { page: 'documents', category: 'Охрана труда' } },
   { icon: 'siren', name: 'ГО ЧС', note: 'Уполномоченный, инструктажи, учения', open: { page: 'go' } },
   { icon: 'fire', name: 'Пожарная безопасность', note: 'Огнетушители, инструктажи, эвакуация', open: { page: 'fire' } },
   { icon: 'lightning', name: 'Электробезопасность', note: 'I группа, электрохозяйство, обходы', open: { page: 'electro' } },
   { icon: 'files', name: 'Документы и журналы', note: 'Сводная таблица и индекс соответствия', open: { page: 'documents' } },
-  { icon: 'graduation-cap', name: 'Обучение', note: 'Обучение и проверка знаний', open: { page: 'guide', section: 'internal' } },
+  { icon: 'graduation-cap', name: 'Обучение', note: 'Обучение и проверка знаний', open: { page: 'training' } },
   { icon: 'clipboard-text', name: 'СОУТ', note: 'Сроки, классы, декларация', open: { page: 'sout' } },
   { icon: 'warning', name: 'ОПР (риски)', note: 'Уровни рисков и план мер', open: { page: 'opr' } },
   { icon: 'bell', name: 'Уведомления', note: 'Напоминания о сроках' },
-  { icon: 'chat-circle', name: 'Обратная связь', note: 'Вопросы ответственным', open: { page: 'feedback' } },
+  { icon: 'chat-circle', name: 'Вопросы и ответы', note: 'Частые вопросы по ОТ, ПБ, ЭБ, ГО ЧС', open: { page: 'feedback' } },
   { icon: 'book-open', name: 'Инструкция', note: 'Пошагово для руководителя', open: { page: 'guide', section: 'start' } },
   { icon: 'barbell', name: 'Тренинг обучения', note: 'Тренажёр проверки знаний по ОТ', open: { page: 'training' } },
 ]
@@ -206,6 +206,11 @@ export default function App() {
               )
               return m.open ? (
                 <button key={m.name} type="button" className="module-card module-link" onClick={() => {
+                  // «Охрана труда» — документы офиса с фильтром по разделу чек-листа
+                  if (m.open.category) {
+                    const code = selectedOffice || offices[0]?.code
+                    if (code) { drill({ code, category: m.open.category }); return }
+                  }
                   if (m.open.section) setGuideSection(m.open.section)
                   setPage(m.open.page)
                 }}>{body}</button>
