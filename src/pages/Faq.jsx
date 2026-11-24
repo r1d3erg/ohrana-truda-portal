@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { FAQ, FAQ_CATEGORIES, FAQ_UPDATED } from '../data/faq.js'
+import { FAQ, FAQ_CATEGORIES, FAQ_SCOPE, FAQ_UPDATED } from '../data/faq.js'
 
 const norm = (s) => s.toLowerCase().replace(/ё/g, 'е')
 
@@ -23,13 +23,14 @@ export default function Faq() {
     <section className="section">
       <div className="section-head">
         <div>
-          <h2>Вопросы и ответы по охране труда</h2>
+          <h2>Вопросы и ответы для IT-офисов</h2>
           <p className="muted">
-            Справочный материал, сверен с нормами на {FAQ_UPDATED} — включая изменения Правил обучения
-            с 31.08.2026 (ПП РФ № 805). Не заменяет нормативные акты: при спорной ситуации сверяйтесь с первоисточником.
+            Охрана труда, пожарная и электробезопасность, ГО и ЧС, медицина. Применимость: {FAQ_SCOPE}.
+            Сверено с нормами на {FAQ_UPDATED}, включая изменения Правил обучения с 31.08.2026 (ПП РФ № 805).
+            Не заменяет нормативные акты: при спорной ситуации сверяйтесь с первоисточником.
           </p>
         </div>
-        <input className="input faq-search" type="search" placeholder="Поиск: инструктаж, СОУТ, штраф…"
+        <input className="input faq-search" type="search" placeholder="Поиск: инструктаж, огнетушитель, I группа…"
                value={q} onChange={e => setQ(e.target.value)} aria-label="Поиск по вопросам" />
       </div>
 
