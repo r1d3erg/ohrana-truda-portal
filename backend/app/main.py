@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from . import config, registers, services
+from . import config, directions, registers, services
 from .models import RiskAssessment, SoutAssessment
 from .db import get_db, init_db
 from .parser import OFFICE_CODE_RE, normalize_office_code, STATUS_LABELS, ChecklistParseError
@@ -192,7 +192,10 @@ def get_office_imports(code: str, db: Session = Depends(get_db)):
 # --- Дашборд ----------------------------------------------------------------
 @api.get("/dashboard", tags=["dashboard"], summary="Сводные показатели по всем офисам")
 def get_dashboard(db: Session = Depends(get_db)):
-    return {**services.dashboard(db), "registers": registers.dashboard_block(db)}
+    dirs = directions.dashboard_block(db)
+    reg = registers.dashboard_block(db, extra_alerts=dirs["alerts"])
+    reg["directions"] = dirs["directions"]
+    return {**services.dashboard(db), "registers": reg}
 
 
 # --- СОУТ и ОПР: ручной ввод -----------------------------------------------
@@ -333,6 +336,50 @@ _register_routes("sout", SoutAssessment, registers.prepare_sout, registers.sout_
                  registers.sout_summary, registers.sout_office_state, SoutIn, "СОУТ")
 _register_routes("opr", RiskAssessment, registers.prepare_opr, registers.opr_to_dict,
                  registers.opr_summary, registers.opr_office_state, OprIn, "ОПР")
+
+
+# --- Пожарная безопасность, электробезопасность, ГО и ЧС ---------------------
+def _kind(kind: str) -> str:
+    if kind not in directions.SPECS:
+        raise HTTPException(status_code=404, detail={"message": f"Неизвестное направление «{kind}»"})
+    return kind
+
+
+@api.get("/directions", tags=["directions"], summary="Список направлений с ручным вводом")
+def directions_list():
+    return [directions.spec(k) for k in directions.KINDS]
+
+
+@api.get("/directions/{kind}/spec", tags=["directions"], summary="Поля формы направления")
+def direction_spec(kind: str):
+    return directions.spec(_kind(kind))
+
+
+@api.get("/directions/{kind}", tags=["directions"], summary="Состояние направления по всем офисам")
+def direction_summary(kind: str, db: Session = Depends(get_db)):
+    return directions.summary(db, _kind(kind))
+
+
+@api.get("/offices/{code:path}/directions/{kind}", tags=["directions"], summary="Карточка офиса по направлению")
+def direction_office(code: str, kind: str, db: Session = Depends(get_db)):
+    _kind(kind)
+    try:
+        office = services.get_office(db, code)
+    except services.NotFound as exc:
+        _not_found(exc)
+    return directions.office_state(db, kind, office)
+
+
+@api.put("/offices/{code:path}/directions/{kind}", tags=["directions"], summary="Сохранить карточку офиса по направлению")
+def direction_save(code: str, kind: str, body: dict, db: Session = Depends(get_db)):
+    _kind(kind)
+    try:
+        office = services.get_office(db, code)
+        return directions.save(db, kind, office, body)
+    except services.NotFound as exc:
+        _not_found(exc)
+    except registers.ValidationFailed as exc:
+        _validation_error(exc)
 
 
 # Карточка офиса — последней: «{code:path}» иначе перехватит /offices/<код>/checklist и т.п.

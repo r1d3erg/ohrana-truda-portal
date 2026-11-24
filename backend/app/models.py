@@ -12,7 +12,7 @@ from __future__ import annotations
 from datetime import date, datetime, timezone
 
 from sqlalchemy import (
-    Date, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint,
+    JSON, Date, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -186,5 +186,20 @@ class RiskAssessment(Base):
     measures_done: Mapped[int | None] = mapped_column(Integer)
     employees_informed_date: Mapped[date | None] = mapped_column(Date)      # ознакомление с результатами
     notes: Mapped[str | None] = mapped_column(Text)
+
+    office: Mapped[Office] = relationship()
+
+
+class OfficeDirection(Base):
+    """Карточка офиса по направлению (fire / electro / go): ручной ввод, поля — directions.SPECS."""
+    __tablename__ = "office_directions"
+    __table_args__ = (UniqueConstraint("office_id", "kind", name="uq_office_direction"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    office_id: Mapped[int] = mapped_column(ForeignKey("offices.id", ondelete="CASCADE"), index=True)
+    kind: Mapped[str] = mapped_column(String(16))
+    data: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
     office: Mapped[Office] = relationship()

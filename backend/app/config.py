@@ -29,3 +29,6 @@ SOUT_VALIDITY_YEARS = _int("SOUT_VALIDITY_YEARS", 5)          # ч. 4 ст. 8 42
 SOUT_WARN_DAYS = _int("SOUT_WARN_DAYS", 180)                 # за сколько дней предупреждать об окончании
 OPR_REVIEW_MONTHS = _int("OPR_REVIEW_MONTHS", 12)            # пересмотр ОПР по умолчанию (задаёт работодатель)
 OPR_WARN_DAYS = _int("OPR_WARN_DAYS", 60)
+
+# Пожарная безопасность, электробезопасность, ГО и ЧС: за сколько дней предупреждать о сроке
+DIRECTIONS_WARN_DAYS = _int("DIRECTIONS_WARN_DAYS", 30)

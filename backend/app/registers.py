@@ -414,8 +414,10 @@ def opr_summary(db: Session) -> list[dict]:
 _LEVEL_ORDER = {"bad": 0, "warn": 1}
 
 
-def dashboard_block(db: Session) -> dict:
-    """Сводка СОУТ/ОПР для дашборда: состояния по офисам и общий список предупреждений."""
+def dashboard_block(db: Session, extra_alerts: list[dict] | None = None) -> dict:
+    """Сводка СОУТ/ОПР для дашборда: состояния по офисам и общий список предупреждений.
+
+    extra_alerts — предупреждения других реестров (ПБ, ЭБ, ГО ЧС), сортируются вместе с СОУТ/ОПР."""
     sout = sout_summary(db)
     opr = opr_summary(db)
     sout_counts = {k: 0 for k in SOUT_STATES}
@@ -424,7 +426,7 @@ def dashboard_block(db: Session) -> dict:
         sout_counts[s["state"]] += 1
     for o in opr:
         opr_counts[o["state"]] += 1
-    alerts = [a for s in sout for a in s["alerts"]] + [a for o in opr for a in o["alerts"]]
+    alerts = [a for s in sout for a in s["alerts"]] + [a for o in opr for a in o["alerts"]] + list(extra_alerts or [])
     alerts.sort(key=lambda a: (_LEVEL_ORDER.get(a["severity"], 2), a["due"] or "9999", a["office_code"]))
     harmful = sum((s["current"] or {}).get("harmful_workplaces", 0) for s in sout)
     high_risks = sum((o["current"] or {}).get("risks_high", 0) for o in opr)
@@ -446,7 +448,7 @@ def dashboard_block(db: Session) -> dict:
                 "risks_high": (o["current"] or {}).get("risks_high", 0),
             } for o in opr},
         },
-        "alerts": alerts[:30],
+        "alerts": alerts[:40],
         "alerts_total": len(alerts),
         "alerts_bad": sum(1 for a in alerts if a["severity"] == "bad"),
     }
