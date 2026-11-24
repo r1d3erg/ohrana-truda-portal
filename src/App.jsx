@@ -212,6 +212,7 @@ export default function App() {
                     if (code) { drill({ code, category: m.open.category }); return }
                   }
                   if (m.open.section) setGuideSection(m.open.section)
+                  if (m.open.page === 'documents') setDocFocus(null) // без фильтра от прошлого перехода
                   setPage(m.open.page)
                 }}>{body}</button>
               ) : (
