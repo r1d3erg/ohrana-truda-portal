@@ -499,3 +499,38 @@ td.hm-office:hover .hm-office-code { text-decoration: underline; text-underline-
 .exam-result .exam-facts { flex: 1; min-width: 288px; }
 .exam-score { font-size: 60px; line-height: 1; font-weight: 600; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
 .exam-review { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+
+/* ── Модули и инструкция ─────────────────────────────────────────── */
+.module-link { text-align: left; color: var(--text); font: inherit; border: 0; cursor: pointer; transition: background-color var(--t-color) var(--ease), transform 120ms var(--ease); }
+.module-link:hover { background: var(--surface-2); }
+.module-link:hover .module-icon { background: var(--surface); }
+.module-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.module-link:active { transform: scale(0.98); }
+.module-soon { opacity: 0.55; }
+
+.guide { display: grid; grid-template-columns: 256px minmax(0, 1fr); gap: 24px; align-items: start; }
+.guide-toc { position: sticky; top: 16px; padding: 12px; display: flex; flex-direction: column; gap: 4px; max-height: calc(100vh - 32px); overflow-y: auto; }
+.guide-toc-group + .guide-toc-group { margin-top: 12px; }
+.guide-toc-title { padding: 4px 8px; font-size: var(--text-xs); line-height: var(--lh-xs); color: var(--muted); font-weight: 500; }
+.guide-toc-item { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 8px; border: 0; border-radius: var(--r-md); background: transparent; color: var(--text); font: inherit; font-size: var(--text-sm); line-height: var(--lh-sm); cursor: pointer; transition: background-color var(--t-color) var(--ease); }
+.guide-toc-item:hover { background: var(--surface-2); }
+.guide-toc-item.active { background: var(--accent); color: var(--accent-contrast); }
+.guide-toc-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.guide-updated { padding: 12px 8px 4px; font-size: var(--text-xs); line-height: var(--lh-xs); }
+.guide-body { scroll-margin-top: 16px; }
+.guide-body h2 { margin-bottom: 8px; }
+.guide-crumb { font-size: var(--text-xs); line-height: var(--lh-xs); color: var(--muted); font-weight: 500; margin-bottom: 4px; }
+.guide-lead { color: var(--muted); max-width: 72ch; margin-bottom: 24px; }
+.guide-h { margin: 24px 0 8px; font-size: var(--text-sm); line-height: var(--lh-sm); }
+.guide-p { max-width: 72ch; margin: 0 0 12px; }
+.guide-list, .guide-steps { margin: 0 0 16px; padding-left: 24px; max-width: 72ch; display: flex; flex-direction: column; gap: 6px; }
+.guide-steps li::marker { color: var(--muted); font-weight: 600; }
+.guide-note { background: var(--surface-2); border-radius: var(--r-lg); padding: 12px 16px; margin: 8px 0 16px; max-width: 72ch; font-size: var(--text-sm); line-height: var(--lh-sm); }
+.guide-table { margin: 0 0 16px; }
+.guide-table td { vertical-align: top; }
+.guide-table td:first-child { font-weight: 500; }
+.guide-pager { display: flex; justify-content: space-between; gap: 12px; margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+@media (max-width: 900px) {
+  .guide { grid-template-columns: 1fr; }
+  .guide-toc { position: static; max-height: none; }
+}

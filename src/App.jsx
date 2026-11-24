@@ -5,6 +5,7 @@ import { Icon } from './icons.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Documents from './pages/Documents.jsx'
 import Faq from './pages/Faq.jsx'
+import Guide from './pages/Guide.jsx'
 import Offices from './pages/Offices.jsx'
 import Opr from './pages/Opr.jsx'
 import Sout from './pages/Sout.jsx'
@@ -23,32 +24,34 @@ const NAV = [
     { key: 'opr', label: 'ОПР', icon: 'warning' },
   ] },
   { group: 'Направления · в разработке', items: [
-    { key: 'fire', label: 'Пожарная безопасность', icon: 'fire', soon: true },
-    { key: 'electro', label: 'Электробезопасность', icon: 'lightning', soon: true },
-    { key: 'go', label: 'ГО ЧС', icon: 'siren', soon: true },
+    { key: 'fire', label: 'Пожарная безопасность', icon: 'fire', soon: true, guide: 'fire' },
+    { key: 'electro', label: 'Электробезопасность', icon: 'lightning', soon: true, guide: 'electro' },
+    { key: 'go', label: 'ГО ЧС', icon: 'siren', soon: true, guide: 'go' },
     { key: 'notifications', label: 'Уведомления', icon: 'bell', soon: true },
   ] },
   { group: 'Обучение и справка', items: [
     { key: 'training', label: 'Тренинг обучения', icon: 'graduation-cap' },
     { key: 'feedback', label: 'Вопросы и ответы', icon: 'question' },
+    { key: 'guide', label: 'Инструкция', icon: 'book-open' },
     { key: 'modules', label: 'Модули', icon: 'gauge' },
   ] },
 ]
 const PAGES = Object.fromEntries(NAV.flatMap(g => g.items.map(i => [i.key, i])))
 
+// Модули: open — куда ведёт карточка (страница портала и, для «Инструкции», раздел)
 const MODULES = [
-  { icon: 'hard-hat', name: 'Охрана труда', note: 'Документы СУОТ, инструкции, инструктажи' },
-  { icon: 'siren', name: 'ГО ЧС', note: 'Планы и приказы по ГО и ЧС' },
-  { icon: 'fire', name: 'Пожарная безопасность', note: 'Противопожарный режим, эвакуация' },
-  { icon: 'lightning', name: 'Электробезопасность', note: 'Группы допуска, журналы' },
-  { icon: 'files', name: 'Документы и журналы', note: 'Сводная таблица и индекс соответствия' },
-  { icon: 'graduation-cap', name: 'Обучение', note: 'Обучение и проверка знаний' },
-  { icon: 'clipboard-text', name: 'СОУТ', note: 'Сроки, классы, декларация' },
-  { icon: 'warning', name: 'ОПР (риски)', note: 'Уровни рисков и план мер' },
+  { icon: 'hard-hat', name: 'Охрана труда', note: 'Документы СУОТ, инструкции, инструктажи', open: { page: 'guide', section: 'roles' } },
+  { icon: 'siren', name: 'ГО ЧС', note: 'Планы и приказы по ГО и ЧС', open: { page: 'guide', section: 'go' } },
+  { icon: 'fire', name: 'Пожарная безопасность', note: 'Противопожарный режим, эвакуация', open: { page: 'guide', section: 'fire' } },
+  { icon: 'lightning', name: 'Электробезопасность', note: 'Группы допуска, журналы', open: { page: 'guide', section: 'electro' } },
+  { icon: 'files', name: 'Документы и журналы', note: 'Сводная таблица и индекс соответствия', open: { page: 'documents' } },
+  { icon: 'graduation-cap', name: 'Обучение', note: 'Обучение и проверка знаний', open: { page: 'guide', section: 'training-rules' } },
+  { icon: 'clipboard-text', name: 'СОУТ', note: 'Сроки, классы, декларация', open: { page: 'sout' } },
+  { icon: 'warning', name: 'ОПР (риски)', note: 'Уровни рисков и план мер', open: { page: 'opr' } },
   { icon: 'bell', name: 'Уведомления', note: 'Напоминания о сроках' },
-  { icon: 'chat-circle', name: 'Обратная связь', note: 'Вопросы ответственным' },
-  { icon: 'book-open', name: 'Инструкция', note: 'Как работать с порталом' },
-  { icon: 'barbell', name: 'Тренинг обучения', note: 'Тренажёр проверки знаний по ОТ' },
+  { icon: 'chat-circle', name: 'Обратная связь', note: 'Вопросы ответственным', open: { page: 'feedback' } },
+  { icon: 'book-open', name: 'Инструкция', note: 'Как работать с порталом', open: { page: 'guide', section: 'start' } },
+  { icon: 'barbell', name: 'Тренинг обучения', note: 'Тренажёр проверки знаний по ОТ', open: { page: 'training' } },
 ]
 
 const THEME_OPTIONS = { system: 'Как в системе', dark: 'Тёмная', light: 'Светлая' }
@@ -64,6 +67,7 @@ export default function App() {
   const [docFocus, setDocFocus] = useState(null)
   const [cfg, setCfg] = useState(null)
   const [registerFocus, setRegisterFocus] = useState(null)
+  const [guideSection, setGuideSection] = useState(null)
   const [error, setError] = useState(null)
   const [themePref, setThemePref] = useState(getThemePref)
 
@@ -189,17 +193,29 @@ export default function App() {
 
         {page === 'modules' && (
           <div className="modules-grid">
-            {MODULES.map(m => (
-              <article key={m.name} className="module-card">
-                <span className="module-icon"><Icon name={m.icon} size={24} /></span>
-                <div>
-                  <div className="module-name">{m.name}</div>
-                  <div className="muted">{m.note}</div>
-                </div>
-              </article>
-            ))}
+            {MODULES.map(m => {
+              const body = (
+                <>
+                  <span className="module-icon"><Icon name={m.icon} size={24} /></span>
+                  <div>
+                    <div className="module-name">{m.name}</div>
+                    <div className="muted">{m.note}</div>
+                  </div>
+                </>
+              )
+              return m.open ? (
+                <button key={m.name} type="button" className="module-card module-link" onClick={() => {
+                  if (m.open.section) setGuideSection(m.open.section)
+                  setPage(m.open.page)
+                }}>{body}</button>
+              ) : (
+                <article key={m.name} className="module-card module-soon" title="Модуль в разработке">{body}</article>
+              )
+            })}
           </div>
         )}
+
+        {page === 'guide' && <Guide sectionId={guideSection} onSectionChange={setGuideSection} />}
 
         {page === 'feedback' && <Faq />}
 
@@ -209,7 +225,14 @@ export default function App() {
           <section className="section empty-state">
             <h2>Раздел «{current.label}» в разработке</h2>
             <p>Документы по этому направлению уже видны в чек-листе офиса: откройте «Документы» и выберите раздел в фильтре.</p>
-            <button className="btn" onClick={() => setPage('documents')}>Открыть документы</button>
+            <div className="upload-row">
+              <button className="btn" onClick={() => setPage('documents')}>Открыть документы</button>
+              {current.guide && (
+                <button className="btn btn-secondary" onClick={() => { setGuideSection(current.guide); setPage('guide') }}>
+                  <Icon name="book-open" size={20} /> Что делать по регламенту
+                </button>
+              )}
+            </div>
           </section>
         )}
       </main>
