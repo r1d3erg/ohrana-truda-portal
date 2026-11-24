@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from . import auth, config, directions, registers, services
-from .auth import current_user, ensure_office_access, require_admin, require_editor
+from .auth import current_user, ensure_office_access, ensure_office_visible, require_admin, require_editor, visible_office_ids
 from .models import Office, RiskAssessment, SoutAssessment, User
 from .db import SessionLocal, get_db, init_db
 from .parser import OFFICE_CODE_RE, normalize_office_code, STATUS_LABELS, ChecklistParseError
@@ -60,6 +60,16 @@ api = APIRouter(prefix="/api")
 
 def _not_found(exc: services.NotFound):
     raise HTTPException(status_code=404, detail={"message": str(exc)})
+
+
+def _office_for(db: Session, code: str, user: User) -> Office:
+    """Офис по номеру с проверкой, что пользователь его видит (ответственный — только свои)."""
+    try:
+        office = services.get_office(db, code)
+    except services.NotFound as exc:
+        _not_found(exc)
+    ensure_office_visible(user, office)
+    return office
 
 
 # --- Служебное --------------------------------------------------------------
@@ -283,11 +293,12 @@ def _authorize_upload(user: User, office: Office | None) -> None:
 
 
 @api.get("/imports/{import_id}", tags=["imports"], summary="Загрузка: шапка, сводка и все позиции")
-def get_import(import_id: int, _: User = Depends(current_user), db: Session = Depends(get_db)):
+def get_import(import_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)):
     try:
         imp = services.get_import(db, import_id)
     except services.NotFound as exc:
         _not_found(exc)
+    ensure_office_visible(user, imp.office)
     items = list(imp.items)
     return {
         "import": services.import_to_dict(imp),
@@ -319,8 +330,8 @@ class OfficeUpdate(BaseModel):
 
 
 @api.get("/offices", tags=["offices"], summary="Список офисов с индексом соответствия")
-def list_offices(_: User = Depends(current_user), db: Session = Depends(get_db)):
-    return services.list_offices(db)
+def list_offices(user: User = Depends(current_user), db: Session = Depends(get_db)):
+    return services.list_offices(db, visible_office_ids(user))
 
 
 @api.post("/offices", tags=["offices"], status_code=201, summary="Создать офис вручную")
@@ -341,13 +352,10 @@ def get_office_checklist(
     status: str | None = Query(None, description="done / in_progress / missing / not_set"),
     category: str | None = Query(None, description="Раздел, напр. «Пожарная безопасность»"),
     q: str | None = Query(None, description="Поиск по наименованию"),
-    _: User = Depends(current_user),
+    user: User = Depends(current_user),
     db: Session = Depends(get_db),
 ):
-    try:
-        office = services.get_office(db, code)
-    except services.NotFound as exc:
-        _not_found(exc)
+    office = _office_for(db, code, user)
     if status and status not in STATUS_LABELS:
         raise HTTPException(status_code=422, detail={"message": f"Неизвестный статус «{status}»"})
     imp = services.current_import(db, office)
@@ -369,21 +377,19 @@ def get_office_checklist(
 
 
 @api.get("/offices/{code:path}/imports", tags=["offices"], summary="История загрузок офиса")
-def get_office_imports(code: str, _: User = Depends(current_user), db: Session = Depends(get_db)):
-    try:
-        office = services.get_office(db, code)
-    except services.NotFound as exc:
-        _not_found(exc)
+def get_office_imports(code: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    office = _office_for(db, code, user)
     return services.office_imports(db, office)
 
 
 # --- Дашборд ----------------------------------------------------------------
 @api.get("/dashboard", tags=["dashboard"], summary="Сводные показатели по всем офисам")
-def get_dashboard(_: User = Depends(current_user), db: Session = Depends(get_db)):
-    dirs = directions.dashboard_block(db)
-    reg = registers.dashboard_block(db, extra_alerts=dirs["alerts"])
+def get_dashboard(user: User = Depends(current_user), db: Session = Depends(get_db)):
+    ids = visible_office_ids(user)  # ответственный — только свои офисы
+    dirs = directions.dashboard_block(db, ids)
+    reg = registers.dashboard_block(db, extra_alerts=dirs["alerts"], office_ids=ids)
     reg["directions"] = dirs["directions"]
-    return {**services.dashboard(db), "registers": reg}
+    return {**services.dashboard(db, ids), "registers": reg}
 
 
 # --- СОУТ и ОПР: ручной ввод -----------------------------------------------
@@ -466,15 +472,12 @@ def _validation_error(exc: registers.ValidationFailed):
 
 def _register_routes(prefix: str, model, prepare, to_dict, summary_fn, state_fn, body_cls, title: str):
     @api.get(f"/{prefix}", tags=[prefix], operation_id=f"{prefix}_list", summary=f"{title}: состояние по всем офисам")
-    def list_summary(_: User = Depends(current_user), db: Session = Depends(get_db)):
-        return summary_fn(db)
+    def list_summary(user: User = Depends(current_user), db: Session = Depends(get_db)):
+        return summary_fn(db, visible_office_ids(user))
 
     @api.get(f"/offices/{{code:path}}/{prefix}", tags=[prefix], operation_id=f"{prefix}_office", summary=f"{title}: история и состояние офиса")
-    def office_records(code: str, _: User = Depends(current_user), db: Session = Depends(get_db)):
-        try:
-            office = services.get_office(db, code)
-        except services.NotFound as exc:
-            _not_found(exc)
+    def office_records(code: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
+        office = _office_for(db, code, user)
         records = list(db.scalars(select(model).where(model.office_id == office.id)))
         state = state_fn(office, records)
         ordered = sorted(records, key=lambda r: r.id, reverse=True)
@@ -548,17 +551,14 @@ def direction_spec(kind: str, _: User = Depends(current_user)):
 
 
 @api.get("/directions/{kind}", tags=["directions"], summary="Состояние направления по всем офисам")
-def direction_summary(kind: str, _: User = Depends(current_user), db: Session = Depends(get_db)):
-    return directions.summary(db, _kind(kind))
+def direction_summary(kind: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    return directions.summary(db, _kind(kind), visible_office_ids(user))
 
 
 @api.get("/offices/{code:path}/directions/{kind}", tags=["directions"], summary="Карточка офиса по направлению")
-def direction_office(code: str, kind: str, _: User = Depends(current_user), db: Session = Depends(get_db)):
+def direction_office(code: str, kind: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
     _kind(kind)
-    try:
-        office = services.get_office(db, code)
-    except services.NotFound as exc:
-        _not_found(exc)
+    office = _office_for(db, code, user)
     return directions.office_state(db, kind, office)
 
 
@@ -587,11 +587,8 @@ def update_office(code: str, body: OfficeUpdate, _: User = Depends(require_admin
 
 
 @api.get("/offices/{code:path}", tags=["offices"], summary="Карточка офиса: индекс и сводка по разделам")
-def get_office(code: str, _: User = Depends(current_user), db: Session = Depends(get_db)):
-    try:
-        office = services.get_office(db, code)
-    except services.NotFound as exc:
-        _not_found(exc)
+def get_office(code: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    office = _office_for(db, code, user)
     imp = services.current_import(db, office)
     return {
         **services.office_to_dict(office, imp),

@@ -93,6 +93,7 @@ def test_viewer_reads_but_cannot_change(client):
     make_user("boss", "viewer")
     v = login_client("boss", "Strong-pass-1")
     assert v.get("/api/dashboard").status_code == 200
+    assert [o["code"] for o in v.get("/api/offices").json()] == ["v1"]  # руководитель видит все офисы
     assert v.get("/api/offices/v1").status_code == 200
     assert upload(v, "v1").status_code == 403
     assert v.post("/api/offices/v1/sout", json={}).status_code == 403
@@ -106,16 +107,31 @@ def test_responsible_limited_to_own_offices(client):
     make_user("resp", "responsible", offices=["own"])
     r = login_client("resp", "Strong-pass-1")
 
-    # чтение — всех офисов
-    assert r.get("/api/offices/other").status_code == 200
+    # видит только свои офисы — везде: список, дашборд, реестры, карточки
+    assert [o["code"] for o in r.get("/api/offices").json()] == ["own"]
+    dash = r.get("/api/dashboard").json()
+    assert [m["code"] for m in dash["matrix"]] == ["own"]
+    assert set(dash["registers"]["sout"]["by_office"]) == {"own"}
+    assert set(dash["registers"]["directions"]["fire"]["by_office"]) == {"own"}
+    assert all(a["office_code"] == "own" for a in dash["registers"]["alerts"])
+    assert [s["office_code"] for s in r.get("/api/sout").json()] == ["own"]
+    assert [s["office_code"] for s in r.get("/api/opr").json()] == ["own"]
+    assert [s["office_code"] for s in r.get("/api/directions/go").json()] == ["own"]
+    for path in ("/api/offices/other", "/api/offices/other/checklist", "/api/offices/other/imports",
+                 "/api/offices/other/sout", "/api/offices/other/opr", "/api/offices/other/directions/fire"):
+        assert r.get(path).status_code == 404, path
+    other_import = client.get("/api/offices/other/imports").json()[0]["id"]
+    assert r.get(f"/api/imports/{other_import}").status_code == 404
+    # служба ОТ и руководитель видят всё
+    assert len(client.get("/api/offices").json()) == 2
     # запись — только своих
     assert r.put("/api/offices/own/directions/fire", json={"responsible": "Я"}).status_code == 200
-    assert r.put("/api/offices/other/directions/fire", json={"responsible": "Я"}).status_code == 403
+    assert r.put("/api/offices/other/directions/fire", json={"responsible": "Я"}).status_code == 404
     rec = r.post("/api/offices/own/sout", json={"kind": "planned", "status": "planned"})
     assert rec.status_code == 201
-    assert r.post("/api/offices/other/sout", json={"kind": "planned", "status": "planned"}).status_code == 403
+    assert r.post("/api/offices/other/sout", json={"kind": "planned", "status": "planned"}).status_code == 404
     other_rec = client.post("/api/offices/other/sout", json={"kind": "planned", "status": "planned"}).json()
-    assert r.put(f"/api/sout/{other_rec['id']}", json={"kind": "planned", "status": "planned"}).status_code == 403
+    assert r.put(f"/api/sout/{other_rec['id']}", json={"kind": "planned", "status": "planned"}).status_code == 404
     # удаление и управление — только служба ОТ
     assert r.delete(f"/api/sout/{rec.json()['id']}").status_code == 403
     assert r.post("/api/offices", json={"code": "new"}).status_code == 403
@@ -124,7 +140,7 @@ def test_responsible_limited_to_own_offices(client):
     # загрузка: своя — можно, чужая — нет, новый офис — нет
     own2 = build_checklist(office="own", check_date="18.08.2026")
     assert r.post("/api/imports", files={"file": ("own.xlsx", own2, XLSX)}).status_code == 200
-    assert upload(r, "other").status_code == 403
+    assert upload(r, "other").status_code == 404
     assert upload(r, "brand-new").status_code == 403
     assert client.get("/api/offices/brand-new").status_code == 404
 

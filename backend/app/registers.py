@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from . import config
-from .models import Office, RiskAssessment, SoutAssessment
+from .models import Office, RiskAssessment, SoutAssessment, offices_query
 
 # ---------------------------------------------------------------------------
 # Справочники
@@ -399,14 +399,14 @@ def _grouped(db: Session, model, offices: list[Office]) -> dict[int, list]:
     return out
 
 
-def sout_summary(db: Session) -> list[dict]:
-    offices = db.scalars(select(Office).order_by(Office.code)).all()
+def sout_summary(db: Session, office_ids=None) -> list[dict]:
+    offices = db.scalars(offices_query(office_ids)).all()
     grouped = _grouped(db, SoutAssessment, offices)
     return [sout_office_state(o, grouped[o.id]) for o in offices]
 
 
-def opr_summary(db: Session) -> list[dict]:
-    offices = db.scalars(select(Office).order_by(Office.code)).all()
+def opr_summary(db: Session, office_ids=None) -> list[dict]:
+    offices = db.scalars(offices_query(office_ids)).all()
     grouped = _grouped(db, RiskAssessment, offices)
     return [opr_office_state(o, grouped[o.id]) for o in offices]
 
@@ -414,12 +414,12 @@ def opr_summary(db: Session) -> list[dict]:
 _LEVEL_ORDER = {"bad": 0, "warn": 1}
 
 
-def dashboard_block(db: Session, extra_alerts: list[dict] | None = None) -> dict:
+def dashboard_block(db: Session, extra_alerts: list[dict] | None = None, office_ids=None) -> dict:
     """Сводка СОУТ/ОПР для дашборда: состояния по офисам и общий список предупреждений.
 
     extra_alerts — предупреждения других реестров (ПБ, ЭБ, ГО ЧС), сортируются вместе с СОУТ/ОПР."""
-    sout = sout_summary(db)
-    opr = opr_summary(db)
+    sout = sout_summary(db, office_ids)
+    opr = opr_summary(db, office_ids)
     sout_counts = {k: 0 for k in SOUT_STATES}
     opr_counts = {k: 0 for k in OPR_STATES}
     for s in sout:

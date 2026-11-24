@@ -26,7 +26,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from . import config
-from .models import Office, OfficeDirection
+from .models import Office, OfficeDirection, offices_query
 from .registers import ValidationFailed, add_months, today
 
 GROUPS = {"II": "II", "III": "III", "IV": "IV", "V": "V"}
@@ -339,8 +339,8 @@ def office_state(db: Session, kind: str, office: Office) -> dict:
     return st
 
 
-def summary(db: Session, kind: str) -> list[dict]:
-    offices = db.scalars(select(Office).order_by(Office.code)).all()
+def summary(db: Session, kind: str, office_ids=None) -> list[dict]:
+    offices = db.scalars(offices_query(office_ids)).all()
     rows = _rows(db, kind, offices)
     out = []
     for o in offices:
@@ -363,12 +363,12 @@ def save(db: Session, kind: str, office: Office, raw: dict) -> dict:
     return office_state(db, kind, office)
 
 
-def dashboard_block(db: Session) -> dict:
+def dashboard_block(db: Session, office_ids=None) -> dict:
     """Сводка для дашборда: по каждому направлению счётчики состояний и состояние каждого офиса."""
     out = {}
     all_alerts = []
     for kind in KINDS:
-        items = summary(db, kind)
+        items = summary(db, kind, office_ids)
         counts = {k: 0 for k in STATES}
         for it in items:
             counts[it["state"]] += 1

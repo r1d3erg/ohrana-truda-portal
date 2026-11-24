@@ -5,8 +5,9 @@
 
 Роли:
   admin       — служба ОТ: всё, включая пользователей, офисы и удаление.
-  responsible — ответственный офиса: видит все офисы, изменяет данные только своих офисов
-                (загрузка чек-листа, СОУТ, ОПР, ПБ, ЭБ, ГО ЧС). Удалять не может.
+  responsible — ответственный офиса: видит и изменяет только назначенные ему офисы
+                (дашборд, документы, загрузка чек-листа, СОУТ, ОПР, ПБ, ЭБ, ГО ЧС). Удалять не может.
+                Чужие офисы для него не существуют: на запрос — 404.
   viewer      — руководитель / наблюдатель: только просмотр.
 
 Подробно — docs/auth.md.
@@ -262,11 +263,24 @@ def office_ids(user: User) -> set[int]:
     return {o.id for o in user.offices}
 
 
+def visible_office_ids(user: User) -> set[int] | None:
+    """Какие офисы видит пользователь: None — все (служба ОТ, руководитель), иначе — назначенные."""
+    return None if user.role in ("admin", "viewer") else office_ids(user)
+
+
+def ensure_office_visible(user: User, office: Office) -> None:
+    """Чужой офис для ответственного — «не найден» (не раскрываем, что он существует)."""
+    ids = visible_office_ids(user)
+    if ids is not None and office.id not in ids:
+        raise HTTPException(status_code=404, detail={"message": f"Офис «{office.code}» не найден"})
+
+
 def can_edit_office(user: User, office: Office) -> bool:
     return user.role == "admin" or (user.role == "responsible" and office.id in office_ids(user))
 
 
 def ensure_office_access(user: User, office: Office) -> None:
+    ensure_office_visible(user, office)  # чужой офис для ответственного — 404, а не 403
     if not can_edit_office(user, office):
         _forbidden(f"Нет прав на изменение данных офиса «{office.code}»")
 

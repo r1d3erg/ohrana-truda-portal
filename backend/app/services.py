@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from . import config
-from .models import ChecklistImport, ChecklistItem, Office
+from .models import ChecklistImport, ChecklistItem, Office, offices_query
 from .parser import (
     STATUS_DONE, STATUS_IN_PROGRESS, STATUS_LABELS, STATUS_MISSING, STATUS_NOT_SET,
     ParsedChecklist, empty_counts, parse_checklist, readiness, summarize,
@@ -160,8 +160,8 @@ def refresh_current_import(db: Session, office: Office) -> None:
     office.current_import_id = latest.id if latest else None
 
 
-def list_offices(db: Session) -> list[dict]:
-    offices = db.scalars(select(Office).order_by(Office.code)).all()
+def list_offices(db: Session, office_ids=None) -> list[dict]:
+    offices = db.scalars(offices_query(office_ids)).all()
     ids = [o.current_import_id for o in offices if o.current_import_id]
     imports = {i.id: i for i in db.scalars(select(ChecklistImport).where(ChecklistImport.id.in_(ids)))} if ids else {}
     return [office_to_dict(o, imports.get(o.current_import_id)) for o in offices]
@@ -369,10 +369,11 @@ def office_imports(db: Session, office: Office) -> list[dict]:
 # ---------------------------------------------------------------------------
 # Дашборд
 # ---------------------------------------------------------------------------
-def dashboard(db: Session) -> dict:
+def dashboard(db: Session, office_ids=None) -> dict:
     """Сводка по всем офисам: KPI, матрица «офис × направление», слабые места,
-    чаще всего отсутствующие документы. Считается по актуальным загрузкам."""
-    offices = db.scalars(select(Office).order_by(Office.code)).all()
+    чаще всего отсутствующие документы. Считается по актуальным загрузкам.
+    office_ids — только эти офисы (для ответственного), None — все."""
+    offices = db.scalars(offices_query(office_ids)).all()
     ids = [o.current_import_id for o in offices if o.current_import_id]
     imports = {i.id: i for i in db.scalars(select(ChecklistImport).where(ChecklistImport.id.in_(ids)))} if ids else {}
 

@@ -15,6 +15,7 @@ from datetime import date, datetime, timezone
 from sqlalchemy import (
     JSON, Boolean, Column, Date, DateTime, Float, ForeignKey, Integer, String, Table, Text, UniqueConstraint,
 )
+from sqlalchemy import select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
@@ -243,3 +244,13 @@ class AuthSession(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     ip: Mapped[str] = mapped_column(String(64), default="")
     user_agent: Mapped[str] = mapped_column(String(255), default="")
+
+
+def offices_query(office_ids=None):
+    """Офисы по номеру; office_ids — ограничение области видимости (None — все офисы).
+
+    Ответственный офиса видит только назначенные ему офисы (auth.visible_office_ids)."""
+    q = select(Office).order_by(Office.code)
+    if office_ids is not None:
+        q = q.where(Office.id.in_(list(office_ids)))
+    return q
