@@ -88,16 +88,29 @@ jobs:
       - name: Start stack
         run: |
           cp .env.example .env
+          echo "ADMIN_PASSWORD=E2e-admin-pass-1" >> .env
           docker compose up -d --build --wait
 
-      - name: Upload checklist through portal proxy
+      - name: Login, change temporary password, upload checklist through portal proxy
         run: |
           pip install openpyxl
           python -c "import sys; sys.path.insert(0, 'backend/tests'); from factory import build_checklist; open('/tmp/t.xlsx', 'wb').write(build_checklist(office='e2e-1'))"
+          H='X-Requested-With: ot-portal'
+          J='Content-Type: application/json'
           curl -fsS http://localhost:8080/api/health
-          curl -fsS -F "file=@/tmp/t.xlsx" http://localhost:8080/api/imports | tee /tmp/upload.json
+          # без входа — 401
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/api/offices)" = 401
+          # без заголовка CSRF — 403
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H "$J" -d '{"login":"admin","password":"E2e-admin-pass-1"}' http://localhost:8080/api/auth/login)" = 403
+          curl -fsS -c /tmp/jar -H "$H" -H "$J" -d '{"login":"admin","password":"E2e-admin-pass-1"}' http://localhost:8080/api/auth/login
+          # со временным паролем работать нельзя, пока не сменишь
+          test "$(curl -s -o /dev/null -w '%{http_code}' -b /tmp/jar http://localhost:8080/api/offices)" = 403
+          curl -fsS -b /tmp/jar -H "$H" -H "$J" -d '{"current_password":"E2e-admin-pass-1","new_password":"E2e-new-pass-22"}' http://localhost:8080/api/auth/password
+          curl -fsS -b /tmp/jar -H "$H" -F "file=@/tmp/t.xlsx" http://localhost:8080/api/imports | tee /tmp/upload.json
           python -c "import json; r = json.load(open('/tmp/upload.json')); assert r['result'] == 'created', r; assert r['summary']['readiness'] == 50.0, r"
-          curl -fsS http://localhost:8080/api/offices | python -c "import json, sys; o = json.load(sys.stdin); assert o[0]['code'] == 'e2e-1' and o[0]['readiness'] == 50.0, o; print(o)"
+          curl -fsS -b /tmp/jar http://localhost:8080/api/offices | python -c "import json, sys; o = json.load(sys.stdin); assert o[0]['code'] == 'e2e-1' and o[0]['readiness'] == 50.0, o; print(o)"
+          # Swagger в продакшен-конфигурации выключен
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/api/docs)" != 200
           curl -fsS http://localhost:8080/ | grep -q '<div id="root">'
 
       - name: Logs on failure

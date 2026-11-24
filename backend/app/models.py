@@ -3,6 +3,7 @@
 offices            — офисы (ключ — номер офиса из шапки таблицы, напр. «cy1»)
 checklist_imports  — каждая загрузка сводной таблицы (снимок на дату проверки)
 checklist_items    — позиции чек-листа конкретной загрузки
+users, user_offices, auth_sessions — пользователи, их офисы и сессии входа (auth.py)
 
 Офис ссылается на актуальную загрузку через current_import_id — именно из неё
 портал берёт индекс соответствия, статус и список документов.
@@ -12,7 +13,7 @@ from __future__ import annotations
 from datetime import date, datetime, timezone
 
 from sqlalchemy import (
-    JSON, Date, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint,
+    JSON, Boolean, Column, Date, DateTime, Float, ForeignKey, Integer, String, Table, Text, UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -203,3 +204,42 @@ class OfficeDirection(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
     office: Mapped[Office] = relationship()
+
+
+# --- Пользователи и сессии (auth.py) ------------------------------------------------
+user_offices = Table(
+    "user_offices", Base.metadata,
+    Column("user_id", ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+    Column("office_id", ForeignKey("offices.id", ondelete="CASCADE"), primary_key=True),
+)
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    login: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    full_name: Mapped[str] = mapped_column(String(255), default="")
+    role: Mapped[str] = mapped_column(String(16))  # admin / responsible / viewer
+    password_hash: Mapped[str] = mapped_column(String(255))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    must_change_password: Mapped[bool] = mapped_column(Boolean, default=True)
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+    offices: Mapped[list[Office]] = relationship(secondary=user_offices, lazy="selectin")
+
+
+class AuthSession(Base):
+    """Сессия входа. В БД хранится только SHA-256 токена; сам токен — в HttpOnly-cookie."""
+    __tablename__ = "auth_sessions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    ip: Mapped[str] = mapped_column(String(64), default="")
+    user_agent: Mapped[str] = mapped_column(String(255), default="")

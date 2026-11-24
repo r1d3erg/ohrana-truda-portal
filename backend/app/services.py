@@ -223,13 +223,17 @@ def diff_items(prev: list, new: list) -> dict:
     }
 
 
-def import_checklist(db: Session, data: bytes, filename: str | None, dry_run: bool = False) -> dict:
+def import_checklist(db: Session, data: bytes, filename: str | None, dry_run: bool = False,
+                     authorize=None) -> dict:
+    """authorize(office | None) — проверка прав до любых изменений (бросает HTTPException)."""
     parsed: ParsedChecklist = parse_checklist(data)  # ChecklistParseError -> 422
     sha = hashlib.sha256(data).hexdigest()
     warnings = list(parsed.warnings)
     check_date = parsed.check_date or datetime.now(timezone.utc).date()
 
     office = db.scalar(select(Office).where(Office.code == parsed.office_code))
+    if authorize is not None:
+        authorize(office)
     office_created = office is None
 
     totals, by_category = summarize([(i.category, i.status) for i in parsed.items])
