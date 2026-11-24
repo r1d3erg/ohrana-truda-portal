@@ -26,18 +26,20 @@
 | Сессия | случайный токен 256 бит в cookie `ot_session`: `HttpOnly`, `SameSite=Strict`, `Path=/api`, `Secure` при `COOKIE_SECURE=true`. В БД (`auth_sessions`) хранится только SHA-256 токена |
 | Срок | не дольше `SESSION_HOURS` (12 ч) и выход после `SESSION_IDLE_MIN` (120 мин) бездействия |
 | CSRF | изменяющие запросы (POST/PUT/PATCH/DELETE) принимаются только с заголовком `X-Requested-With: ot-portal` + `SameSite=Strict` |
-| Перебор паролей | после `LOGIN_MAX_FAILS` (5) неудачных попыток с одного IP или на один логин — блок на `LOGIN_WINDOW_MIN` (15) мин. Ответ на неверный логин и неверный пароль одинаковый |
+| Перебор паролей | после `LOGIN_MAX_FAILS` (5) неудачных попыток с одного IP или 10 — на один логин — блок на `LOGIN_WINDOW_MIN` (15) мин. Ответ на неверный логин и неверный пароль одинаковый |
 | Временный пароль | при создании пользователя и сбросе пароля — флаг `must_change_password`: до смены пароля доступны только `/auth/me`, `/auth/password`, `/auth/logout` |
 | Отключение и сброс | блокировка пользователя или сброс пароля сразу закрывают все его сессии; смена своего пароля закрывает остальные сессии |
-| Журнал | вход, неудачные попытки, создание и изменение пользователей пишутся в лог бэкенда (`ohrana.auth`) |
+| Журнал | вход, неудачные попытки (логин — только если он существует, чтобы в лог не попал пароль, введённый не в то поле), создание и изменение пользователей пишутся в лог бэкенда (`ohrana.auth`). Пароли и токены в лог не пишутся |
 
 ## Первый администратор
 
 При запуске, если в БД нет ни одного пользователя, создаётся администратор `ADMIN_LOGIN` (по умолчанию `admin`):
 
 - пароль из `ADMIN_PASSWORD`, если задан;
-- иначе пароль генерируется и **один раз** выводится в лог бэкенда
-  (локально — в окне Терминала `start-dev.command`, в Docker — `docker compose logs backend`).
+- иначе пароль генерируется и записывается в файл `INITIAL_PASSWORD_FILE`
+  (по умолчанию `data/initial-admin-password.txt` рядом с бэкендом, права 600; в Docker —
+  `docker compose exec backend cat /app/data/initial-admin-password.txt`). В лог пишется только путь.
+  После смены пароля администратором файл удаляется.
 
 При первом входе пароль нужно сменить. Дальше пользователи создаются в портале: «Администрирование → Пользователи и роли».
 
@@ -76,6 +78,14 @@ curl -b jar -H "$H" -F file=@cy1.xlsx http://localhost:8080/api/imports
 | `LOGIN_MAX_FAILS` / `LOGIN_WINDOW_MIN` | 5 / 15 | Ограничение попыток входа |
 | `TRUST_PROXY` | `false` (в Docker — `true`) | Брать IP клиента из `X-Real-IP` (его выставляет nginx портала) |
 | `API_DOCS` | `true` (в `.env.example` — `false`) | Swagger UI на `/api/docs` |
+
+## Заголовки браузера (nginx)
+
+`nginx-security-headers.conf` подключается в каждом `location` (nginx не наследует `add_header`,
+если в `location` есть свой): CSP без `unsafe-inline`/`unsafe-eval` (`script-src 'self'`, `frame-ancestors 'none'`),
+`X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, `COOP`.
+Скрипт ранней установки темы вынесен из `index.html` в `public/theme-init.js`.
+HSTS включается вручную, когда портал работает по HTTPS.
 
 ## Что дальше
 

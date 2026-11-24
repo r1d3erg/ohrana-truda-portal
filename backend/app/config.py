@@ -44,4 +44,6 @@ COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() in ("1", "true", "ye
 TRUST_PROXY = os.getenv("TRUST_PROXY", "false").lower() in ("1", "true", "yes")      # true за nginx
 LOGIN_MAX_FAILS = _int("LOGIN_MAX_FAILS", 5)        # неудачных попыток до блокировки
 LOGIN_WINDOW_MIN = _int("LOGIN_WINDOW_MIN", 15)     # окно и длительность блокировки, мин
+# Куда записать сгенерированный пароль первого администратора (не в лог). Удаляется после смены пароля.
+INITIAL_PASSWORD_FILE = os.getenv("INITIAL_PASSWORD_FILE", "./data/initial-admin-password.txt")
 API_DOCS = os.getenv("API_DOCS", "true").lower() in ("1", "true", "yes")  # Swagger на /api/docs

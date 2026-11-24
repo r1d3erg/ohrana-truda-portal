@@ -41,6 +41,19 @@ def test_login_throttled_after_5_fails(client, anon):
     assert r.status_code == 429
 
 
+def test_login_key_has_higher_limit_than_ip():
+    from app.auth import throttle
+
+    throttle.clear()
+    for _ in range(5):
+        throttle.fail("login:admin")
+    assert not throttle.blocked("login:admin")   # для логина порог 10
+    for _ in range(5):
+        throttle.fail("ip:1.2.3.4")
+    assert throttle.blocked("ip:1.2.3.4")
+    throttle.clear()
+
+
 def test_csrf_header_required_for_changes(client):
     from fastapi.testclient import TestClient
 
@@ -167,6 +180,28 @@ def test_password_hash_not_exposed(client):
     for u in users:
         assert "password_hash" not in u and "password" not in u
         assert not any("scrypt$" in str(v) for v in u.values())
+
+
+def test_generated_admin_password_goes_to_file_not_log(monkeypatch, tmp_path, caplog):
+    import os
+    import stat
+
+    from app import auth, config
+    from app.db import Base, SessionLocal, engine
+
+    Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)
+    pw_file = tmp_path / "initial-admin-password.txt"
+    monkeypatch.setattr(config, "ADMIN_PASSWORD", "")
+    monkeypatch.setattr(config, "INITIAL_PASSWORD_FILE", str(pw_file))
+    with SessionLocal() as db:
+        auth.bootstrap_admin(db)
+    text = pw_file.read_text()
+    password = text.split("password: ")[1].strip()
+    assert password and password not in caplog.text
+    assert stat.S_IMODE(os.stat(pw_file).st_mode) == 0o600
+    auth.remove_initial_password_file()
+    assert not pw_file.exists()
 
 
 def test_bootstrap_admin(monkeypatch):

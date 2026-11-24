@@ -112,6 +112,11 @@ jobs:
           # Swagger в продакшен-конфигурации выключен
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/api/docs)" != 200
           curl -fsS http://localhost:8080/ | grep -q '<div id="root">'
+          # Заголовки безопасности на всех страницах (в т.ч. index.html и /assets) и закрытые служебные пути
+          for u in / /index.html /theme-init.js; do curl -sI "http://localhost:8080$u" | grep -qi '^content-security-policy:.*script-src .self.' || { echo "нет CSP на $u"; exit 1; }; done
+          A=$(curl -s http://localhost:8080/ | grep -o '/assets/[^"]*\.js' | head -1); curl -sI "http://localhost:8080$A" | grep -qi '^x-frame-options: deny'
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/.env)" = 404
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/.git/config)" = 404
 
       - name: Logs on failure
         if: failure()

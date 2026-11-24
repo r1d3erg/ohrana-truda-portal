@@ -106,10 +106,16 @@ class _Throttle:
         self._fails[key] = lst
         return lst
 
+    @staticmethod
+    def _limit(key: str) -> int:
+        # На логин — вдвое больше попыток, чем на IP: подбор с одного адреса блокируется быстрее,
+        # а чужие попытки не запирают учётную запись так же легко
+        return config.LOGIN_MAX_FAILS * (2 if key.startswith("login:") else 1)
+
     def blocked(self, *keys: str) -> bool:
         now = time.monotonic()
         with self._lock:
-            return any(len(self._key_list(k, now)) >= config.LOGIN_MAX_FAILS for k in keys)
+            return any(len(self._key_list(k, now)) >= self._limit(k) for k in keys)
 
     def fail(self, *keys: str) -> None:
         now = time.monotonic()
@@ -281,6 +287,28 @@ def user_to_dict(user: User) -> dict:
 
 
 # --- Первый администратор ----------------------------------------------------------------
+def _write_initial_password(login: str, password: str) -> str:
+    import os
+    from pathlib import Path
+
+    path = Path(config.INITIAL_PASSWORD_FILE).resolve()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        f.write(f"login: {login}\npassword: {password}\n")
+    return str(path)
+
+
+def remove_initial_password_file() -> None:
+    """После смены пароля администратором временный пароль на диске больше не нужен."""
+    from pathlib import Path
+
+    try:
+        Path(config.INITIAL_PASSWORD_FILE).unlink(missing_ok=True)
+    except OSError:
+        log.warning("Не удалось удалить файл с временным паролем %s", config.INITIAL_PASSWORD_FILE)
+
+
 def bootstrap_admin(db: Session) -> None:
     """Если пользователей нет — создать администратора.
 
@@ -298,7 +326,8 @@ def bootstrap_admin(db: Session) -> None:
                 password_hash=hash_password(password), must_change_password=True))
     db.commit()
     if generated:
-        log.warning("Создан администратор «%s» с временным паролем: %s — смените его при первом входе",
-                    login, password)
+        path = _write_initial_password(login, password)
+        log.warning("Создан администратор «%s». Временный пароль записан в файл %s (права 600) — "
+                    "смените пароль при первом входе, файл удалится автоматически", login, path)
     else:
         log.warning("Создан администратор «%s» (пароль из ADMIN_PASSWORD) — смените его при первом входе", login)

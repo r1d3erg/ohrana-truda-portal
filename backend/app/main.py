@@ -99,7 +99,7 @@ def login(body: LoginIn, request: Request, response: Response, db: Session = Dep
     ok = auth.verify_password(body.password, user.password_hash if user else auth._DUMMY_HASH)
     if not user or not ok or not user.is_active:
         auth.throttle.fail(*keys)
-        auth.log.warning("Неудачный вход: login=%r ip=%s", login_[:64], ip)
+        auth.log.warning("Неудачный вход: login=%s ip=%s", user.login if user else "<неизвестный>", ip)
         raise HTTPException(status_code=401, detail={"message": "Неверный логин или пароль"})
     auth.throttle.reset(*keys)
     token = auth.create_session(db, user, request)
@@ -136,6 +136,8 @@ def change_password(body: PasswordIn, request: Request, user: User = Depends(cur
         raise HTTPException(status_code=422, detail={"message": "Пароль не подходит", "errors": errs})
     user.password_hash = auth.hash_password(body.new_password)
     user.must_change_password = False
+    if user.role == "admin":
+        auth.remove_initial_password_file()
     # Остальные сессии пользователя закрываются, текущая остаётся
     auth.revoke_user_sessions(db, user.id, keep_hash=getattr(request.state, "session_hash", None))
     db.commit()
