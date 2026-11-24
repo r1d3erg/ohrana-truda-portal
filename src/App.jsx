@@ -45,7 +45,7 @@ const MODULES = [
   { icon: 'fire', name: 'Пожарная безопасность', note: 'Противопожарный режим, эвакуация', open: { page: 'guide', section: 'fire-electro' } },
   { icon: 'lightning', name: 'Электробезопасность', note: 'Группы допуска, журналы', open: { page: 'guide', section: 'fire-electro' } },
   { icon: 'files', name: 'Документы и журналы', note: 'Сводная таблица и индекс соответствия', open: { page: 'documents' } },
-  { icon: 'graduation-cap', name: 'Обучение', note: 'Обучение и проверка знаний', open: { page: 'guide', section: 'learn' } },
+  { icon: 'graduation-cap', name: 'Обучение', note: 'Обучение и проверка знаний', open: { page: 'guide', section: 'internal' } },
   { icon: 'clipboard-text', name: 'СОУТ', note: 'Сроки, классы, декларация', open: { page: 'sout' } },
   { icon: 'warning', name: 'ОПР (риски)', note: 'Уровни рисков и план мер', open: { page: 'opr' } },
   { icon: 'bell', name: 'Уведомления', note: 'Напоминания о сроках' },
