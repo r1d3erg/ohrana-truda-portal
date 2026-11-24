@@ -526,6 +526,9 @@ td.hm-office:hover .hm-office-code { text-decoration: underline; text-underline-
 .guide-list, .guide-steps { margin: 0 0 16px; padding-left: 24px; max-width: 72ch; display: flex; flex-direction: column; gap: 6px; }
 .guide-steps li::marker { color: var(--muted); font-weight: 600; }
 .guide-note { background: var(--surface-2); border-radius: var(--r-lg); padding: 12px 16px; margin: 8px 0 16px; max-width: 72ch; font-size: var(--text-sm); line-height: var(--lh-sm); }
+.guide-warn { background: var(--st-bad-tint); }
+.guide-warn strong { color: var(--st-bad-text); }
+.guide-toc-head { padding: 4px 8px 8px; font-weight: 600; font-size: var(--text-sm); line-height: var(--lh-sm); }
 .guide-table { margin: 0 0 16px; }
 .guide-table td { vertical-align: top; }
 .guide-table td:first-child { font-weight: 500; }

@@ -24,8 +24,8 @@ const NAV = [
     { key: 'opr', label: 'ОПР', icon: 'warning' },
   ] },
   { group: 'Направления · в разработке', items: [
-    { key: 'fire', label: 'Пожарная безопасность', icon: 'fire', soon: true, guide: 'fire' },
-    { key: 'electro', label: 'Электробезопасность', icon: 'lightning', soon: true, guide: 'electro' },
+    { key: 'fire', label: 'Пожарная безопасность', icon: 'fire', soon: true, guide: 'fire-electro' },
+    { key: 'electro', label: 'Электробезопасность', icon: 'lightning', soon: true, guide: 'fire-electro' },
     { key: 'go', label: 'ГО ЧС', icon: 'siren', soon: true, guide: 'go' },
     { key: 'notifications', label: 'Уведомления', icon: 'bell', soon: true },
   ] },
@@ -40,17 +40,17 @@ const PAGES = Object.fromEntries(NAV.flatMap(g => g.items.map(i => [i.key, i])))
 
 // Модули: open — куда ведёт карточка (страница портала и, для «Инструкции», раздел)
 const MODULES = [
-  { icon: 'hard-hat', name: 'Охрана труда', note: 'Документы СУОТ, инструкции, инструктажи', open: { page: 'guide', section: 'roles' } },
+  { icon: 'hard-hat', name: 'Охрана труда', note: 'Документы СУОТ, инструкции, инструктажи', open: { page: 'guide', section: 'start' } },
   { icon: 'siren', name: 'ГО ЧС', note: 'Планы и приказы по ГО и ЧС', open: { page: 'guide', section: 'go' } },
-  { icon: 'fire', name: 'Пожарная безопасность', note: 'Противопожарный режим, эвакуация', open: { page: 'guide', section: 'fire' } },
-  { icon: 'lightning', name: 'Электробезопасность', note: 'Группы допуска, журналы', open: { page: 'guide', section: 'electro' } },
+  { icon: 'fire', name: 'Пожарная безопасность', note: 'Противопожарный режим, эвакуация', open: { page: 'guide', section: 'fire-electro' } },
+  { icon: 'lightning', name: 'Электробезопасность', note: 'Группы допуска, журналы', open: { page: 'guide', section: 'fire-electro' } },
   { icon: 'files', name: 'Документы и журналы', note: 'Сводная таблица и индекс соответствия', open: { page: 'documents' } },
-  { icon: 'graduation-cap', name: 'Обучение', note: 'Обучение и проверка знаний', open: { page: 'guide', section: 'training-rules' } },
+  { icon: 'graduation-cap', name: 'Обучение', note: 'Обучение и проверка знаний', open: { page: 'guide', section: 'learn' } },
   { icon: 'clipboard-text', name: 'СОУТ', note: 'Сроки, классы, декларация', open: { page: 'sout' } },
   { icon: 'warning', name: 'ОПР (риски)', note: 'Уровни рисков и план мер', open: { page: 'opr' } },
   { icon: 'bell', name: 'Уведомления', note: 'Напоминания о сроках' },
   { icon: 'chat-circle', name: 'Обратная связь', note: 'Вопросы ответственным', open: { page: 'feedback' } },
-  { icon: 'book-open', name: 'Инструкция', note: 'Как работать с порталом', open: { page: 'guide', section: 'start' } },
+  { icon: 'book-open', name: 'Инструкция', note: 'Пошагово для руководителя', open: { page: 'guide', section: 'start' } },
   { icon: 'barbell', name: 'Тренинг обучения', note: 'Тренажёр проверки знаний по ОТ', open: { page: 'training' } },
 ]
 

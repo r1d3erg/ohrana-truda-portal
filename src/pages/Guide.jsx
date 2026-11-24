@@ -6,6 +6,7 @@ function Block({ b }) {
   if (b.h) return <h3 className="guide-h">{b.h}</h3>
   if (b.p) return <p className="guide-p">{b.p}</p>
   if (b.note) return <div className="guide-note">{b.note}</div>
+  if (b.warn) return <div className="guide-note guide-warn" role="note"><strong>Важно. </strong>{b.warn}</div>
   if (b.steps) return <ol className="guide-steps">{b.steps.map((s, i) => <li key={i}>{s}</li>)}</ol>
   if (b.list) return <ul className="guide-list">{b.list.map((s, i) => <li key={i}>{s}</li>)}</ul>
   if (b.table) {
@@ -43,6 +44,7 @@ export default function Guide({ sectionId, onSectionChange }) {
   return (
     <div className="guide">
       <nav className="guide-toc section" aria-label="Разделы инструкции">
+        <div className="guide-toc-head">Инструкция для руководителя</div>
         {GUIDE_GROUPS.map(g => (
           <div key={g} className="guide-toc-group">
             <div className="guide-toc-title">{g}</div>
