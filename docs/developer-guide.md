@@ -9,6 +9,7 @@
 
 - [checklist-import.md](checklist-import.md) — эталонный пример импорта
   Excel: формат, разбор, проверки, модель, API, связь с порталом;
+- [auth.md](auth.md) — вход, роли, сессии, CSRF; как проверять права в новых маршрутах (`current_user`, `require_editor`, `ensure_office_access`)
 - [directions.md](directions.md) — ПБ, ЭБ, ГО и ЧС: карточка офиса, форма строится по спецификации с бэкенда
 - [sout-opr.md](sout-opr.md) — эталонный пример ручного ввода с расчётом
   сроков и предупреждениями;
